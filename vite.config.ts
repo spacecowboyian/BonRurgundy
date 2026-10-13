@@ -8,6 +8,8 @@ import { defineConfig } from 'vite'
 // secure context, which getUserMedia and SpeechRecognition require.
 export default defineConfig(({ mode }) => ({
   plugins: [react(), ...(mode === 'https' ? [basicSsl()] : [])],
+  // GitHub Pages serves from /<repo>/; local dev stays at /.
+  base: process.env.GITHUB_PAGES ? '/osmo-prompter/' : '/',
   server: { host: true, port: 5173 },
   test: { environment: 'jsdom', globals: true },
 }))
