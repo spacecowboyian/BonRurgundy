@@ -8,6 +8,8 @@ export interface StreamInfo {
   frameRate?: number
   deviceLabel?: string
   deviceId?: string
+  /** Advertised ranges from track.getCapabilities(), when the browser exposes them. */
+  caps?: { width?: ULongRange; height?: ULongRange; frameRate?: DoubleRange }
 }
 
 export interface UseCameraResult {
@@ -20,9 +22,13 @@ export interface UseCameraResult {
   error: string | null
   refreshDevices: () => Promise<void>
   stop: () => void
+  /** Requested frame rate; the camera may negotiate something else (see info.frameRate). */
+  fps: number
+  setFps: (fps: number) => void
 }
 
 const LS_KEY = 'osmo-prompter.cameraDeviceId'
+const LS_FPS = 'osmo-prompter.fps'
 
 /** Prefer the DJI if present, else the saved choice, else the first camera. */
 function pickDefault(devices: MediaDeviceInfo[]): string | null {
@@ -40,6 +46,12 @@ export function useCamera(): UseCameraResult {
   const [status, setStatus] = useState<CameraStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const [fps, setFpsState] = useState<number>(() => Number(localStorage.getItem(LS_FPS)) || 30)
+
+  const setFps = useCallback((f: number) => {
+    localStorage.setItem(LS_FPS, String(f))
+    setFpsState(f)
+  }, [])
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -94,15 +106,22 @@ export function useCamera(): UseCameraResult {
     setError(null)
     ;(async () => {
       try {
-        const s = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: { exact: deviceId },
-            width: { ideal: 3840 },
-            height: { ideal: 2160 },
-            frameRate: { ideal: 30 },
-          },
-          audio: false,
-        })
+        const base = { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }
+        let s: MediaStream
+        try {
+          // Ask for the exact rate first so the browser must pick a matching UVC mode.
+          s = await navigator.mediaDevices.getUserMedia({
+            video: { ...base, frameRate: { exact: fps } },
+            audio: false,
+          })
+        } catch (e) {
+          if (!(e instanceof Error) || e.name !== 'OverconstrainedError') throw e
+          console.warn(`[useCamera] ${fps}fps not available at 4K, falling back to ideal`)
+          s = await navigator.mediaDevices.getUserMedia({
+            video: { ...base, frameRate: { ideal: fps } },
+            audio: false,
+          })
+        }
         if (cancelled) {
           s.getTracks().forEach((t) => t.stop())
           return
@@ -113,13 +132,16 @@ export function useCamera(): UseCameraResult {
         const track = s.getVideoTracks()[0]
         const read = () => {
           const st = track.getSettings()
+          const c = typeof track.getCapabilities === 'function' ? track.getCapabilities() : undefined
           setInfo({
             width: st.width,
             height: st.height,
             frameRate: st.frameRate,
             deviceLabel: track.label,
             deviceId: st.deviceId,
+            caps: c ? { width: c.width, height: c.height, frameRate: c.frameRate } : undefined,
           })
+          console.log('[useCamera] settings', st, 'capabilities', c)
         }
         read()
         // Some UVC devices renegotiate shortly after start; re-read once.
@@ -135,9 +157,9 @@ export function useCamera(): UseCameraResult {
     return () => {
       cancelled = true
     }
-  }, [deviceId])
+  }, [deviceId, fps])
 
   useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), [])
 
-  return { devices, deviceId, setDeviceId, stream, info, status, error, refreshDevices, stop }
+  return { devices, deviceId, setDeviceId, stream, info, status, error, refreshDevices, stop, fps, setFps }
 }
