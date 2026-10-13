@@ -198,3 +198,21 @@ input[type="range"] { accent-color: var(--accent); }
   0% { transform: scale(1); opacity: 0.7; }
   100% { transform: scale(1.5); opacity: 0; }
 }
+
+/* ---- Play button (left of the mic) ---- */
+.play {
+  position: fixed;
+  left: calc(12px + var(--sal));
+  bottom: calc(12px + var(--sab));
+  width: 44px; height: 44px;
+  padding: 0;
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 12;
+  touch-action: auto;
+}
+.mic { left: calc(64px + var(--sal)); }

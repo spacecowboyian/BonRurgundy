@@ -108,7 +108,7 @@ export function SettingsSheet({ cam, cameraOn, setCameraOn, relay, speech, align
           Toggle fullscreen (F)
         </button>
 
-        <h3>Manual scroll</h3>
+        <h3>Play speed</h3>
         <div className="row">
           <label>Speed</label>
           <input type="range" min={40} max={400} step={5} value={ctl.wpm} onChange={(e) => ctl.setWpm(Number(e.target.value))} />

@@ -9,6 +9,7 @@ import { parseScript } from './lib/script'
 import { VideoLayer } from './components/VideoLayer'
 import { Hud } from './components/Hud'
 import { MicButton } from './components/MicButton'
+import { PlayButton } from './components/PlayButton'
 import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
 import { SpeechPanel } from './components/SpeechPanel'
@@ -74,22 +75,32 @@ export default function App() {
     }
   }, [uiOpen, listening, needsTap, speech])
 
+  // Fixed-speed play and voice follow would fight over the cursor: one at a time.
+  const togglePlay = useCallback(() => {
+    if (!ctl.playing) {
+      resumeOnHide.current = false
+      if (listening) speech.stop()
+    }
+    ctl.togglePlay()
+  }, [ctl, listening, speech])
+
   const toggleMic = useCallback(() => {
     if (listening) {
       resumeOnHide.current = false
       speech.stop()
     } else {
       resumeOnHide.current = false
+      if (ctl.playing) ctl.togglePlay()
       setHudHidden(true)
       setSettingsOpen(false)
       speech.start()
     }
-  }, [listening, speech])
+  }, [listening, speech, ctl])
 
   // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
   const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
   useEffect(() => {
-    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.tap,button,input,select,label')
+    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.tap,.play,.mic,button,input,select,label')
     const onDown = (e: PointerEvent) => {
       if (editing || settingsOpen || needsTap || isChrome(e.target)) return
       ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
@@ -136,7 +147,7 @@ export default function App() {
       switch (e.key) {
         case ' ':
           e.preventDefault()
-          ctl.togglePlay()
+          togglePlay()
           break
         case 'ArrowDown':
         case 'ArrowRight':
@@ -197,7 +208,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing, settingsOpen, needsTap, begin, closeEditor, ctl, setPrefs, toggleMic, toggleFullscreen])
+  }, [editing, settingsOpen, needsTap, begin, closeEditor, ctl, setPrefs, toggleMic, togglePlay, toggleFullscreen])
 
   // Wheel / trackpad / touch scrolling on the text. Pixels are converted to
   // words using the current font size so the feel stays constant across sizes.
@@ -263,6 +274,7 @@ export default function App() {
         onEdit={() => setEditing(true)}
         onSettings={() => setSettingsOpen(true)}
       />
+      {!editing && !needsTap && <PlayButton playing={ctl.playing} onClick={togglePlay} />}
       {!editing && !needsTap && (
         <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />
       )}
