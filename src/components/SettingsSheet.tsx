@@ -1,4 +1,6 @@
 import type { UseCameraResult } from '../hooks/useCamera'
+import type { RelayView } from '../hooks/useRelay'
+import { RelayPanel } from './RelayPanel'
 import type { PrompterControl } from '../hooks/usePrompterControl'
 import type { UseSpeechResult } from '../hooks/useSpeech'
 import type { AlignerView } from '../hooks/useAligner'
@@ -6,6 +8,7 @@ import { fontPx, type PrompterPrefs } from './Prompter'
 
 interface Props {
   cam: UseCameraResult
+  relay: RelayView
   speech: UseSpeechResult
   aligner: AlignerView
   ctl: PrompterControl
@@ -16,7 +19,7 @@ interface Props {
   onClose: () => void
 }
 
-export function SettingsSheet({ cam, speech, aligner, ctl, prefs, setPrefs, autoListen, setAutoListen, onClose }: Props) {
+export function SettingsSheet({ cam, relay, speech, aligner, ctl, prefs, setPrefs, autoListen, setAutoListen, onClose }: Props) {
   const capsText = cam.info?.caps
     ? `device offers up to ${cam.info.caps.width?.max ?? '?'}×${cam.info.caps.height?.max ?? '?'}, ${cam.info.caps.frameRate?.max ?? '?'} fps`
     : null
@@ -31,7 +34,7 @@ export function SettingsSheet({ cam, speech, aligner, ctl, prefs, setPrefs, auto
           <button onClick={onClose} style={{ flex: '0 0 auto' }}>Done</button>
         </div>
 
-        <h3>Camera</h3>
+        <h3>Camera{relay.mode === 'receive' ? ' (showing the Mac relay)' : ''}</h3>
         <div className="row">
           <label>Source</label>
           <select value={cam.deviceId ?? ''} onChange={(e) => cam.setDeviceId(e.target.value)}>
@@ -52,6 +55,8 @@ export function SettingsSheet({ cam, speech, aligner, ctl, prefs, setPrefs, auto
             {cam.error ?? (fpsMismatch ? `camera negotiated ${cam.info!.frameRate!.toFixed(0)} fps, not ${cam.fps}` : capsText)}
           </div>
         )}
+
+        <RelayPanel relay={relay} canShare={cam.status === 'live' && !!cam.stream} onShare={() => cam.stream && relay.share(cam.stream)} />
 
         <h3>Voice</h3>
         <div className="row">

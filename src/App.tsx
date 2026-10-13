@@ -3,6 +3,7 @@ import { useCamera } from './hooks/useCamera'
 import { usePrompterControl } from './hooks/usePrompterControl'
 import { useSpeech } from './hooks/useSpeech'
 import { useAligner } from './hooks/useAligner'
+import { useRelay } from './hooks/useRelay'
 import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
 import { VideoLayer } from './components/VideoLayer'
@@ -16,6 +17,7 @@ import { DEFAULT_PREFS, Prompter, fontPx, type PrompterPrefs } from './component
 export default function App() {
   const cam = useCamera()
   const speech = useSpeech()
+  const relay = useRelay()
   const [scriptText, setScriptText] = useLocalState('osmo-prompter.script', '')
   const [prefs, setPrefsRaw] = useLocalState<PrompterPrefs>('osmo-prompter.prefs2', DEFAULT_PREFS)
   // Older builds stored font size in px; anything over 20 can't be a vh value.
@@ -30,6 +32,16 @@ export default function App() {
   const [debugOpen, setDebugOpen] = useState(false)
   // Browsers need a user gesture before the mic can start; show a tap target.
   const [needsTap, setNeedsTap] = useState(() => autoListen && !!scriptText.trim())
+
+  // Receiving from the Mac: release the phone's own camera.
+  useEffect(() => {
+    if (relay.mode === 'receive') cam.stop()
+  }, [relay.mode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // While sharing, follow camera switches.
+  useEffect(() => {
+    if (relay.mode === 'share' && cam.stream) relay.share(cam.stream)
+  }, [relay.mode, cam.stream]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const script = useMemo(() => parseScript(scriptText), [scriptText])
   const ctl = usePrompterControl(script.words.length)
@@ -238,7 +250,10 @@ export default function App() {
   return (
     <>
       {/* Front cameras get a selfie-style mirrored preview; the text is only mirrored for beam-splitter glass. */}
-      <VideoLayer stream={cam.stream} mirror={prefs.mirror !== (cam.info?.facingMode === 'user')} />
+      <VideoLayer
+        stream={relay.mode === 'receive' ? relay.remoteStream : cam.stream}
+        mirror={prefs.mirror !== (relay.mode !== 'receive' && cam.info?.facingMode === 'user')}
+      />
       <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={ctl.setLines} />
       <Hud
         ctl={ctl}
@@ -254,6 +269,7 @@ export default function App() {
       {settingsOpen && (
         <SettingsSheet
           cam={cam}
+          relay={relay}
           speech={speech}
           aligner={aligner}
           ctl={ctl}
