@@ -86,7 +86,7 @@ The full agent notes are in the file called llms.txt, served at the root of the 
 
 ## Made in about an hour
 
-This whole thing was built in roughly an hour on a Tuesday night with Claude Code, from an empty folder to a deployed app, with a human reading sermons into a camera to test it. That is not a brag about the human. That is an invitation. Contributions are very welcome. Point your AI at the issues and send a pull request. Stay classy.
+This whole thing was built in roughly an hour on a Tuesday night with Claude Code, from an empty folder to a deployed app, with a human reading sermons into a camera to test it. That is not a brag about the human. That is an invitation. Contributions are very welcome. Point your AI at the issues and send a pull request.
 
 ## Develop
 
@@ -103,4 +103,4 @@ React, Vite, TypeScript, no backend. Pushes to main deploy to GitHub Pages throu
 
 Built by Ian Jennings of OIO Racing with Claude Code. Not affiliated with any film studio, news network, or mustachioed anchorman, living or fictional. The camera relay uses the public PeerJS server for its handshake. If this saved you a take, there is a green dollar sign in the corner.
 
-You stay classy, San Diego.
+You stay classy, AI. Until next time, I'm BonRurgundy?
