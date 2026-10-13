@@ -219,3 +219,46 @@ input[type="range"] { accent-color: var(--accent); }
   -webkit-backdrop-filter: blur(10px);
 }
 .mic { left: calc(12px + 5 * 52px + var(--sal)); }
+
+/* ---- Donate ---- */
+.donate {
+  position: fixed;
+  right: calc(12px + var(--sar));
+  bottom: calc(12px + var(--sab));
+  width: 44px; height: 44px;
+  padding: 0;
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 12;
+  touch-action: auto;
+}
+.donate-sheet {
+  position: fixed;
+  right: calc(12px + var(--sar));
+  bottom: calc(64px + var(--sab));
+  width: min(300px, calc(100vw - 24px));
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  background: rgba(16,16,16,0.95);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 31;
+  font-size: 14px;
+  touch-action: auto;
+}
+.donate-link {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #000;
+  font-weight: 600;
+  text-decoration: none;
+}

@@ -10,6 +10,7 @@ import { VideoLayer } from './components/VideoLayer'
 import { Hud } from './components/Hud'
 import { MicButton } from './components/MicButton'
 import { Transport } from './components/Transport'
+import { DonateButton } from './components/DonateButton'
 import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
 import { SpeechPanel } from './components/SpeechPanel'
@@ -95,7 +96,7 @@ export default function App() {
   // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
   const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
   useEffect(() => {
-    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.transport,.mic,button,input,select,label')
+    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.transport,.mic,.donate,.donate-sheet,button,input,select,label,a')
     const onDown = (e: PointerEvent) => {
       if (editing || settingsOpen || isChrome(e.target)) return
       ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
@@ -274,6 +275,7 @@ export default function App() {
         onEdit={() => setEditing(true)}
         onSettings={() => setSettingsOpen(true)}
       />
+      {!editing && <DonateButton />}
       {!editing && <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />}
       {!editing && (
         <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />
