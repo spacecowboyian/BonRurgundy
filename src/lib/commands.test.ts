@@ -37,8 +37,8 @@ describe('parseCommands', () => {
     expect(parseCommands(normalize('bob back')).commands).toEqual([{ kind: 'back', lines: 1 }])
   })
   it('reports a pending command while the verb is still coming', () => {
-    expect(pendingCommand(normalize('ready for war cue'))).toBe(true)
-    expect(pendingCommand(normalize('cue back two'))).toBe(false)
+    expect(pendingCommand(normalize('ready for war bob'))).toBe(true)
+    expect(pendingCommand(normalize('bob back two'))).toBe(false)
     expect(pendingCommand(normalize('ready for war'))).toBe(false)
   })
 })
