@@ -1,26 +1,11 @@
-import readme from '../../README.md?raw'
-import { tidyScript } from '../lib/tidy'
+/**
+ * The sample script shown on first launch. Written to be read aloud as a demo,
+ * so it avoids two things the recognizer trips on: the product name (it hears
+ * two or three unrelated words) and any literal voice command like "bon back",
+ * which would fire while you read it.
+ */
+export const SAMPLE_SCRIPT = `Welcome to a teleprompter that actually listens to you.
 
-/** The sample script is the README's opening section (under the title, before the first ## heading), tidied for reading aloud. */
-function section(md: string, heading: string): string {
-  const lines = md.replace(/\r\n?/g, '\n').split('\n')
-  const start = lines.findIndex((l) => l.trim().toLowerCase() === `${heading}`.toLowerCase())
-  if (start < 0) return md
-  let end = lines.length
-  for (let i = start + 1; i < lines.length; i++) {
-    if (/^##?\s/.test(lines[i])) {
-      end = i
-      break
-    }
-  }
-  return lines.slice(start + 1, end).join('\n')
-}
+Some anchors would read anything you put on the prompter. This one flips that around. It reads you. Paste in a script, tap the microphone, and the words scroll as you say them. Go off on a tangent about your dog and it waits. Come back to the script and it picks you right up. Flub a line? Just tell it to go back, and it rewinds. No hands, no foot pedal, no producer yelling in your ear.
 
-/** Cut the sample at the end of the pitch, before the live-app link. */
-function upTo(text: string, marker: string): string {
-  const i = text.indexOf(marker)
-  return i < 0 ? text : text.slice(0, i + marker.length)
-}
-
-/** The recognizer hears two words, so the sample spells it that way. */
-export const SAMPLE_SCRIPT = ('Welcome to Bon Rurgundy. ' + upTo(tidyScript(section(readme, '# BonRurgundy')), 'works every time.')).replace(/BonRurgundy/g, 'Bon Rurgundy')
+It is free, there is nothing to install, and it runs in the browser on your phone or your laptop. Sixty percent of the time, it works every time.`

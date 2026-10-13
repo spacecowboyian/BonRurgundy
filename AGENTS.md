@@ -43,7 +43,7 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 - `src/lib/` pure, tested logic: `normalize` (text to comparable tokens), `aligner` (speech → script cursor), `commands` (wake-word grammar), `tidy` (markdown → spoken text), `scriptUrl` (`?script=` link handling), `script` (paragraph/word model).
 - `src/hooks/` browser glue: `useCamera`, `useSpeech`, `useAligner`, `usePrompterControl`, `useRelay` (Mac→phone WebRTC).
 - `src/components/` UI. `Prompter` is the text layer; `Hud`, `Transport`, `MicButton`, `ScrollBar`, `SettingsSheet`, `ScriptEditor`.
-- `src/data/sampleScript.ts` builds the sample from the README's opening section at build time. Editing the top of `README.md` changes the sample.
+- `src/data/sampleScript.ts` is the first-launch sample. It must not contain the product name (the recognizer can't hear it as one word) or any literal voice command such as "bon back" (it would fire while being read).
 - `public/` static files served at the site root, including `llms.txt`, `logo.svg`, `favicon.svg`, `icon-512.png`, `manifest.webmanifest`.
 
 ## Rules that are not obvious from the code
@@ -55,7 +55,7 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 - The next word to read is highlighted yellow; read words dim.
 - Voice commands fire from the recognizer's interim hypothesis and are stripped before alignment. Stop words never start an alignment jump.
 - iOS allows one capture stream: do not open a second getUserMedia for the mic there (`useSpeech` handles it).
-- The README is written to be read aloud. Keep it prose, no tables or code in the opening section, no real names from the film it nods to.
+- The README is written to be read aloud and must not use real names from the film it nods to.
 - Wake word default is `bon`. Donation handles live in `src/config.ts` and are intentionally public.
 
 ## Before you open a pull request
