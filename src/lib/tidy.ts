@@ -4,15 +4,26 @@
  * bracketed stage directions, and ALL-CAPS speaker labels ending in a colon.
  */
 export function tidyScript(text: string): string {
+  let inFence = false
   return text
     .replace(/\r\n?/g, '\n')
     .split('\n')
     .map((line) => {
       let l = line.trim()
+      if (/^```/.test(l)) {
+        inFence = !inFence
+        return ''
+      }
+      if (inFence) return ''
+      if (/^\|/.test(l)) return '' // markdown table rows
+      if (/^!\[/.test(l)) return '' // images
       if (/^(#{1,6}\s|---+$|\*\*\*+$|___+$)/.test(l)) return ''
       if (/^\*?\[.*\]\*?$/.test(l)) return '' // *[stage direction]*
       if (/^\*\*?[A-Z][A-Z .'’-]{2,}:?\*\*?$/.test(l) || /^[A-Z][A-Z .'’-]{2,}:$/.test(l)) return '' // SPEAKER:
       l = l.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/__([^_]+)__/g, '$1')
+      l = l.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // [text](url) -> text
+      l = l.replace(/`([^`]*)`/g, '$1')
+      l = l.replace(/https?:\/\/\S+/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1') // bare URLs don't read aloud
       l = l.replace(/^>\s?/, '').replace(/^[-*]\s+/, '')
       l = l.replace(/^["“]|["”]$/g, '')
       return l
