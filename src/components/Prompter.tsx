@@ -20,14 +20,16 @@ interface Props {
   /** Called with the number of words visible per viewport, for speed-mode scrolling. */
   onLayout?: (wordsPerViewport: number) => void
   /** Alignment status while listening; tints the reading line. */
-  status?: 'tracking' | 'riffing' | null
+  status?: 'tracking' | 'riffing' | 'held' | null
+  /** Word indices that begin each rendered line, recomputed on layout changes. */
+  onLines?: (lineStarts: number[]) => void
 }
 
 /**
  * Text layer. Positions the cursor word on the reading line by translating the
  * whole script block. Smooth via CSS transition; the aligner just moves `cursor`.
  */
-export function Prompter({ script, cursor, prefs, onLayout, status }: Props) {
+export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([])
   const translateRef = useRef(0)
@@ -44,6 +46,27 @@ export function Prompter({ script, cursor, prefs, onLayout, status }: Props) {
     translateRef.current = targetY - y
     box.style.transform = `translateY(${translateRef.current}px)`
   }, [clampedCursor, prefs.lineAt, prefs.fontSize, prefs.width, script])
+
+  // Real line boundaries from the DOM, for "back N lines" style navigation.
+  useLayoutEffect(() => {
+    if (!onLines) return
+    const compute = () => {
+      const starts: number[] = []
+      let lastTop = -1
+      wordRefs.current.forEach((el, i) => {
+        if (!el) return
+        const top = el.offsetTop
+        if (top !== lastTop) {
+          starts.push(i)
+          lastTop = top
+        }
+      })
+      onLines(starts)
+    }
+    compute()
+    window.addEventListener('resize', compute)
+    return () => window.removeEventListener('resize', compute)
+  }, [script, prefs.fontSize, prefs.width, onLines])
 
   useEffect(() => {
     if (!onLayout) return
@@ -80,7 +103,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status }: Props) {
           right: 0,
           top: `${prefs.lineAt * 100}%`,
           height: 0,
-          borderTop: `2px solid ${status === 'riffing' ? 'rgba(248,113,113,0.8)' : status === 'tracking' ? 'rgba(74,222,128,0.7)' : 'rgba(255,204,51,0.55)'}`,
+          borderTop: `2px solid ${status === 'riffing' ? 'rgba(248,113,113,0.8)' : status === 'held' ? 'rgba(255,204,51,0.9)' : status === 'tracking' ? 'rgba(74,222,128,0.7)' : 'rgba(255,204,51,0.55)'}`,
           transition: 'border-color 200ms',
           transform: 'translateY(-1px)',
         }}

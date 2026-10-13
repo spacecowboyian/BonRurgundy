@@ -67,9 +67,23 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
         >
           {aligner.state.status}
         </span>
+        {aligner.held && (
+          <span style={{ padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: 'rgba(255,204,51,0.2)', color: 'var(--accent)' }}>
+            held
+          </span>
+        )}
         <span style={{ color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
           tok {aligner.state.cursor} · miss {aligner.state.unmatched}
         </span>
+      </div>
+      <div style={{ color: 'var(--muted)', fontSize: 12 }}>
+        say <b>prompter back</b> / <b>prompter forward three</b> / <b>prompter hold</b> / <b>prompter go</b>
+        {aligner.lastCommand && (
+          <span style={{ color: 'var(--accent)', marginLeft: 8 }}>
+            ← {aligner.lastCommand.cmd.kind}
+            {'lines' in aligner.lastCommand.cmd ? ` ${aligner.lastCommand.cmd.lines}` : ''}
+          </span>
+        )}
       </div>
       <select value={micId ?? ''} onChange={(e) => setMicId(e.target.value)} disabled={listening}>
         {mics.length === 0 && <option value="">No mics</option>}

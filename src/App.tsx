@@ -37,7 +37,6 @@ export default function App() {
         return
       }
       if (e.target instanceof HTMLSelectElement || e.target instanceof HTMLInputElement) return
-      const step = 8 // roughly one line
       switch (e.key) {
         case ' ':
           e.preventDefault()
@@ -46,12 +45,12 @@ export default function App() {
         case 'ArrowDown':
         case 'ArrowRight':
           e.preventDefault()
-          ctl.nudge(e.shiftKey ? step * 4 : step)
+          ctl.nudgeLines(e.shiftKey ? 4 : 1)
           break
         case 'ArrowUp':
         case 'ArrowLeft':
           e.preventDefault()
-          ctl.nudge(e.shiftKey ? -step * 4 : -step)
+          ctl.nudgeLines(e.shiftKey ? -4 : -1)
           break
         case '+':
         case '=':
@@ -148,7 +147,8 @@ export default function App() {
   return (
     <>
       <VideoLayer stream={cam.stream} mirror={prefs.mirror} />
-      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={speech.status === 'listening' && aligner.enabled ? aligner.state.status : null} />
+      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={speech.status === 'listening' && aligner.enabled ? (aligner.held ? 'held' : aligner.state.status) : null}
+        onLines={ctl.setLines} />
       <CameraHud
         cam={cam}
         prefs={prefs}

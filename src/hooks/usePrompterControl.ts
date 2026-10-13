@@ -9,6 +9,9 @@ export interface PrompterControl {
   wpm: number
   setWpm: (w: number | ((w: number) => number)) => void
   nudge: (words: number) => void
+  /** Move by rendered lines (negative = back). Needs setLines to have been called. */
+  nudgeLines: (lines: number) => void
+  setLines: (lineStarts: number[]) => void
   reset: () => void
 }
 
@@ -21,6 +24,7 @@ export function usePrompterControl(wordCount: number, initialWpm = 150): Prompte
   const [playing, setPlaying] = useState(false)
   const [wpm, setWpmState] = useState(initialWpm)
   const acc = useRef(0) // fractional words accumulated
+  const linesRef = useRef<number[]>([])
   const wpmRef = useRef(wpm)
   wpmRef.current = wpm
 
@@ -70,6 +74,22 @@ export function usePrompterControl(wordCount: number, initialWpm = 150): Prompte
       [],
     ),
     nudge: useCallback((n: number) => setCursor((c) => c + n), [setCursor]),
+    setLines: useCallback((l: number[]) => {
+      linesRef.current = l
+    }, []),
+    nudgeLines: useCallback(
+      (n: number) =>
+        setCursor((c) => {
+          const lines = linesRef.current
+          if (lines.length === 0) return c + n * 8
+          // index of the line containing c
+          let li = 0
+          while (li + 1 < lines.length && lines[li + 1] <= c) li++
+          const target = Math.max(0, Math.min(lines.length - 1, li + n))
+          return lines[target]
+        }),
+      [setCursor],
+    ),
     reset: useCallback(() => {
       setPlaying(false)
       setCursorState(0)

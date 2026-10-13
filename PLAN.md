@@ -33,10 +33,11 @@ Goal: a Chrome tab on the Mac showing the Pocket 3 feed full-screen with a scrip
 - Interim results drive smooth scroll; finals confirm.
 - Tests: exact read, skipped sentence, re-read sentence, homophones, filler words.
 
-## Phase 5: Riff + voice commands
+## Phase 5: Riff + voice commands (DONE 2026-10-13)
 - ~6 consecutive unmatched words = `riffing`, freeze scroll. Match resumes = resync.
 - Keyword phrases (`prompter hold` / `prompter go`) detected and filtered before alignment. Confirm no collision with natural speech.
 - **Test:** full read-through with an ad-lib in the middle.
+- **Result:** riff freeze landed in Phase 4. Commands: `prompter back [N]`, `prompter forward [N]` (N in lines, from real rendered line boundaries), `prompter hold`, `prompter go`. Ian prioritised back/forward over hold/go after a live test of the aligner.
 
 ## Phase 6: Polish for real use
 - Font size, line position, margins persisted. Mirror mode. Hide chrome in fullscreen.
