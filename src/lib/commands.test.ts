@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { parseCommands, pendingCommand } from './commands'
 import { normalize } from './normalize'
 
-const p = (s: string) => parseCommands(normalize(s), ['bob', 'cue', 'q', 'queue'])
+const p = (s: string) => parseCommands(normalize(s), ["bon", "bob", "cue", "q", "queue"])
 
 describe('parseCommands', () => {
   it('parses back/forward with counts and strips them', () => {
@@ -47,11 +47,11 @@ describe('parseCommands', () => {
     expect(p('queue hold').commands).toEqual([{ kind: 'hold' }])
     expect(parseCommands(normalize('tango forward'), ['tango']).commands).toEqual([{ kind: 'forward', lines: 1 }])
     expect(parseCommands(normalize('cue forward'), ['tango']).commands).toEqual([])
-    expect(parseCommands(normalize('bob back')).commands).toEqual([{ kind: 'back', lines: 1 }])
+    expect(parseCommands(normalize('bon back')).commands).toEqual([{ kind: 'back', lines: 1 }])
   })
   it('reports a pending command while the verb is still coming', () => {
-    expect(pendingCommand(normalize('ready for war bob'))).toBe(true)
-    expect(pendingCommand(normalize('bob back two'))).toBe(false)
+    expect(pendingCommand(normalize('ready for war bon'))).toBe(true)
+    expect(pendingCommand(normalize('bon back two'))).toBe(false)
     expect(pendingCommand(normalize('ready for war'))).toBe(false)
   })
 })

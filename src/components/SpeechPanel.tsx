@@ -73,7 +73,7 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
         </span>
       </div>
       <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-        say <b>{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back</b> / <b>… forward three</b> / <b>… hold</b> / <b>… go</b>
+        say <b>{aligner.wakeText.split(/[,\s]+/)[0] || 'bon'} back</b> / <b>… forward three</b> / <b>… hold</b> / <b>… go</b>
         {aligner.lastCommand && (
           <span style={{ color: 'var(--accent)', marginLeft: 8 }}>
             ← {aligner.lastCommand.cmd.kind}

@@ -1,6 +1,6 @@
-# Osmo Prompter
+# BonRurgundy
 
-Teleprompter + camera monitor web app for the DJI Osmo Pocket 3.
+Voice-tracked teleprompter for the phone and the Mac, with an optional DJI Osmo Pocket 3 monitor feed. Say "bon back" and it goes back.
 
 Live camera feed (Pocket 3 over USB in webcam/UVC mode) full-screen in the background, script overlaid on top, scrolling as you speak. Voice-tracked alignment keeps the reading line on your words; riffing off-script freezes the prompter; matching words again resumes it.
 
@@ -24,7 +24,7 @@ On a phone open `https://<mac-lan-ip>:5173`, accept the certificate warning once
 
 1. Paste or open a script (`.txt` / `.md`; markdown headings, speaker labels and stage directions are stripped). Tap Done.
 2. Tap the mic icon (bottom left) to follow your voice, or the play button to scroll at a fixed speed.
-3. Say **bob back** / **bob back two** / **bob forward three** to jump by lines, **bob hold** / **bob go** to freeze and resume. Swipe or scroll the text to move it by hand.
+3. Say **bon back** / **bon back two** / **bon forward three** to jump by lines, **bon hold** / **bon go** to freeze and resume. Swipe or scroll the text to move it by hand.
 4. Settings (gear): camera, frame rate, mic, wake word, text size, reading line, width, mirror.
 
 Keys on a keyboard: Space fixed-speed scroll, arrows move a line, V listen, E script, H hide bars, F fullscreen, M mirror, `,` settings, T transcript debug.

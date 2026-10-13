@@ -19,7 +19,7 @@ export function DonateButton() {
         <>
           <div className="sheet-backdrop" onClick={() => setOpen(false)} />
           <div className="donate-sheet" role="dialog">
-            <strong>Support Osmo Prompter</strong>
+            <strong>Support BonRurgundy</strong>
             <span style={{ color: 'var(--muted)', fontSize: 12 }}>Free to use. If it saved you a take, buy the dev a coffee.</span>
             {paypal && (
               <a className="donate-link" href={`https://paypal.me/${encodeURIComponent(paypal)}`} target="_blank" rel="noopener noreferrer">
