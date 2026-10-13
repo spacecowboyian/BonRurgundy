@@ -46,6 +46,7 @@ button, select {
 button:hover, select:hover { background: rgba(255, 255, 255, 0.14); }
 button.primary { background: var(--accent); color: #000; font-weight: 600; border-color: transparent; }
 button.icon { width: 40px; padding: 0; font-size: 18px; }
+button.round { width: 44px; height: 44px; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); }
 button:disabled { opacity: 0.4; cursor: default; }
 input[type="text"] {
   background: rgba(255, 255, 255, 0.08);
@@ -59,14 +60,14 @@ input[type="range"] { accent-color: var(--accent); }
 /* ---- HUD bars ---- */
 .bar {
   position: fixed;
-  left: calc(10px + var(--sal));
-  right: calc(10px + var(--sar));
+  left: 0;
+  right: 0;
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 6px 10px;
+  padding: calc(6px + var(--sat)) calc(10px + var(--sar)) 6px calc(10px + var(--sal));
   background: var(--panel);
-  border-radius: 12px;
+  border-radius: 0;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-size: 13px;
@@ -74,8 +75,7 @@ input[type="range"] { accent-color: var(--accent); }
   transition: opacity 200ms;
   touch-action: auto;
 }
-.bar.top { top: calc(8px + var(--sat)); }
-.bar.bottom { bottom: calc(8px + var(--sab)); }
+.bar.top { top: 0; }
 .bar.hidden { opacity: 0; pointer-events: none; }
 .bar .spacer { flex: 1; }
 .bar .chip {
@@ -157,7 +157,7 @@ input[type="range"] { accent-color: var(--accent); }
 
 /* ---- Phone ---- */
 @media (max-width: 900px), (max-height: 500px) {
-  .bar { font-size: 12px; gap: 6px; padding: 5px 8px; border-radius: 10px; }
+  .bar { font-size: 12px; gap: 6px; }
   .bar .desktop-only { display: none; }
   button, select { min-height: 40px; }
   .sheet { top: calc(52px + var(--sat)); bottom: calc(52px + var(--sab)); }
@@ -168,7 +168,6 @@ input[type="range"] { accent-color: var(--accent); }
     left: calc(10px + var(--sal)); right: calc(10px + var(--sar)); width: auto;
     top: auto; max-height: 70vh;
   }
-  .bar .brand { display: none; }
 }
 
 /* ---- Mic indicator ---- */
@@ -197,5 +196,3 @@ input[type="range"] { accent-color: var(--accent); }
   0% { transform: scale(1); opacity: 0.7; }
   100% { transform: scale(1.5); opacity: 0; }
 }
-/* make room for the mic in the bottom bar */
-.bar.bottom { left: calc(64px + var(--sal)); }

@@ -93,6 +93,11 @@ export function SettingsSheet({ cam, speech, aligner, ctl, prefs, setPrefs, auto
         </div>
         <label className="toggle"><input type="checkbox" checked={prefs.mirror} onChange={(e) => setPrefs((p) => ({ ...p, mirror: e.target.checked }))} /> Mirror (beam-splitter glass)</label>
 
+        <h3>Display</h3>
+        <button onClick={() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.().catch(() => {}))}>
+          Toggle fullscreen (F)
+        </button>
+
         <h3>Manual scroll</h3>
         <div className="row">
           <label>Speed</label>

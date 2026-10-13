@@ -240,15 +240,11 @@ export default function App() {
       <VideoLayer stream={cam.stream} mirror={prefs.mirror} />
       <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={ctl.setLines} />
       <Hud
-        cam={cam}
-        speech={speech}
-        aligner={aligner}
         ctl={ctl}
         wordCount={script.words.length}
         hidden={hudHidden || needsTap}
         onEdit={() => setEditing(true)}
         onSettings={() => setSettingsOpen(true)}
-        onFullscreen={toggleFullscreen}
       />
       {!editing && !needsTap && (
         <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />
