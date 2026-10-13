@@ -15,10 +15,13 @@ describe('tidyScript', () => {
 *[beat, exhale]*
 
 > quoted line`
-    expect(tidyScript(input)).toBe('Ladies and gentlemen, welcome.\n\nquoted line')
+    expect(tidyScript(input)).toBe('TITLE\n\nSub\n\nLadies and gentlemen, welcome.\n\nquoted line')
+  })
+  it('keeps headings as their own paragraph', () => {
+    expect(tidyScript('Intro line.\n## Act Two\nMore words.')).toBe('Intro line.\n\nAct Two\n\nMore words.')
   })
   it('strips html tags and drops lines that were only tags', () => {
-    expect(tidyScript('<p align="center"><img src="x.png"></p>\n\n# T\n\nHello <b>there</b>')).toBe('Hello there')
+    expect(tidyScript('<p align="center"><img src="x.png"></p>\n\n# T\n\nHello <b>there</b>')).toBe('T\n\nHello there')
   })
   it('drops code fences, tables, images, links and bare urls', () => {
     const input = `Intro line with a [link](https://x.y) and \`code\`.

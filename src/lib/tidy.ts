@@ -1,6 +1,7 @@
 /**
  * Strip common markdown / screenplay scaffolding so a pasted script reads as
- * plain spoken copy. Conservative: drops headings, rules, emphasis markers,
+ * plain spoken copy. Headings are kept as their own paragraph (minus the #s) so
+ * they work as landing points for next/previous. Drops rules, emphasis markers,
  * bracketed stage directions, and ALL-CAPS speaker labels ending in a colon.
  */
 export function tidyScript(text: string): string {
@@ -19,7 +20,12 @@ export function tidyScript(text: string): string {
       if (/^!\[/.test(l)) return '' // images
       l = l.replace(/<[^>]+>/g, '').trim() // html tags (logo header, <br>, etc.)
       if (!l) return ''
-      if (/^(#{1,6}\s|---+$|\*\*\*+$|___+$)/.test(l)) return ''
+      if (/^#{1,6}\s/.test(l)) {
+        // Heading: keep the words as a paragraph of their own.
+        const h = l.replace(/^#{1,6}\s+/, '').replace(/\s+#+$/, '').replace(/[*_`]/g, '').replace(/^["“]|["”]$/g, '').trim()
+        return h ? `\n${h}\n` : ''
+      }
+      if (/^(---+$|\*\*\*+$|___+$)/.test(l)) return ''
       if (/^\*?\[.*\]\*?$/.test(l)) return '' // *[stage direction]*
       if (/^\*\*?[A-Z][A-Z .'’-]{2,}:?\*\*?$/.test(l) || /^[A-Z][A-Z .'’-]{2,}:$/.test(l)) return '' // SPEAKER:
       l = l.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/__([^_]+)__/g, '$1')
