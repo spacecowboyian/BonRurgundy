@@ -62,12 +62,14 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
     const dt = (now - a.changedAt) / 1000
     if (a.changedAt && delta > 0 && delta <= 8 && dt > 0.05 && dt < 4) {
       const inst = delta / dt
-      a.rate = a.rate ? a.rate * 0.85 + inst * 0.15 : inst
-    } else if (delta < 0 || delta > 8) {
-      a.rate = 0 // jump, re-read or manual move: re-measure pace
+      a.rate = a.rate ? a.rate * 0.9 + inst * 0.1 : inst
+    } else if (delta < -8 || delta > 8) {
+      a.rate = 0 // jump or manual move: re-measure pace
     }
+    // Small backward moves are interim-hypothesis corrections; keep the pace
+    // and don't count them as "a new word arrived".
+    if (delta > 0 || Math.abs(delta) > 8) a.changedAt = now
     a.cursor = clampedCursor
-    a.changedAt = now
   }, [clampedCursor])
 
   const yOfWord = (i: number) => {
@@ -94,15 +96,22 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
         const n = 8
         const pxPerWord = (yOfWord(a.cursor + n) - yOfWord(a.cursor)) / n || lineH / 5
         const pace = -a.rate * pxPerWord
-        // Hold the lock with a gentle proportional nudge, stronger when far off.
-        const gain = Math.abs(error) > lineH ? 3 : 1.2
-        vCmd = pace + error * gain
+        if (error > 0) {
+          // We're ahead of the confirmed word: never reverse, just ease off.
+          // Fully stopped once a line and a half ahead.
+          vCmd = pace * Math.max(0, 1 - error / (1.5 * lineH))
+        } else {
+          // Behind: pace plus a soft catch-up, with a dead band so interim
+          // jitter doesn't show.
+          const lag = Math.max(0, -error - 0.4 * lineH)
+          vCmd = pace - lag * 0.8
+        }
       } else {
         // Not tracking (paused, riffing, held, manual): settle onto the cursor.
         vCmd = error * (Math.abs(error) > 2 * lineH ? 6 : 2.5)
       }
       // Ease velocity so starts, stops and pace changes are gradual.
-      const tau = Math.abs(error) > 2 * lineH ? 0.12 : 0.45
+      const tau = Math.abs(error) > 2 * lineH ? 0.12 : predict ? 0.8 : 0.45
       a.v += (vCmd - a.v) * (1 - Math.exp(-dt / tau))
       a.y += a.v * dt
       if (Math.abs(error) < 0.05 && Math.abs(a.v) < 0.5) {
