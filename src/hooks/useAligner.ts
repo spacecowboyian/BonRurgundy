@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { align, cursorWord, INITIAL_STATE, tokenizeScript, wordToCursor, type AlignState } from '../lib/aligner'
 import { normalize } from '../lib/normalize'
-import { parseCommands, pendingCommand, type Command } from '../lib/commands'
+import { DEFAULT_WAKE, lastWakeIndex, parseCommands, parseWakeList, pendingCommand, type Command } from '../lib/commands'
+import { useLocalState } from '../lib/storage'
 import type { ParsedScript } from '../lib/script'
 import type { UseSpeechResult } from './useSpeech'
 import type { PrompterControl } from './usePrompterControl'
@@ -17,6 +18,9 @@ export interface AlignerView {
   setHeld: (v: boolean) => void
   /** Last voice command executed, for the debug panel. */
   lastCommand: { cmd: Command; at: number } | null
+  /** Wake word aliases as the user typed them, e.g. "cue, q, queue". */
+  wakeText: string
+  setWakeText: (s: string) => void
 }
 
 /**
@@ -35,6 +39,11 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
   const lastSet = useRef<number>(-1)
   const interimTokens = useMemo(() => normalize(speech.interim), [speech.interim])
   const [held, setHeld] = useState(false)
+  const [wakeText, setWakeText] = useLocalState('osmo-prompter.wake', DEFAULT_WAKE.join(', '))
+  const wake = useMemo(() => {
+    const w = parseWakeList(wakeText)
+    return w.length ? w : DEFAULT_WAKE
+  }, [wakeText])
   const [lastCommand, setLastCommand] = useState<{ cmd: Command; at: number } | null>(null)
   // Fingerprint of the command fired from the current interim, so the final
   // for the same utterance doesn't fire it again.
@@ -89,7 +98,7 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
       const fresh = speech.finals.slice(finalsSeen.current)
       finalsSeen.current = speech.finals.length
       for (const c of fresh) {
-        const parsed = parseCommands(normalize(c.text))
+        const parsed = parseCommands(normalize(c.text), wake)
         if (parsed.commands.length) {
           const fp = JSON.stringify(parsed.commands)
           if (firedInterim.current !== fp) parsed.commands.forEach(runCommand)
@@ -105,7 +114,7 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
     }
 
     // Interim: fire a command as soon as it is recognizable, once per utterance.
-    const parsed = parseCommands(interimTokens)
+    const parsed = parseCommands(interimTokens, wake)
     if (parsed.commands.length) {
       const fp = JSON.stringify(parsed.commands)
       if (firedInterim.current !== fp) {
@@ -121,7 +130,7 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
       return
     }
     // Don't align the wake word itself while the verb is still coming.
-    const toAlign = pendingCommand(parsed.rest) ? parsed.rest.slice(0, parsed.rest.lastIndexOf('prompter')) : parsed.rest
+    const toAlign = pendingCommand(parsed.rest, wake) ? parsed.rest.slice(0, lastWakeIndex(parsed.rest, wake)) : parsed.rest
     const live = toAlign.length ? align(checkpoint.current, tokens, toAlign) : checkpoint.current
     setView(live)
     const word = cursorWord(tokens, live.cursor)
@@ -129,7 +138,7 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
       lastSet.current = word
       ctl.setCursor(word)
     }
-  }, [enabled, tokens, speech.finals, interimTokens, ctl, held]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [enabled, tokens, speech.finals, interimTokens, ctl, held, wake]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { enabled, setEnabled, state: view, interimTokens, held, setHeld, lastCommand }
+  return { enabled, setEnabled, state: view, interimTokens, held, setHeld, lastCommand, wakeText, setWakeText }
 }

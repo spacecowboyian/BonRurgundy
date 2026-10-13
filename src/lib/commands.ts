@@ -1,14 +1,26 @@
 /**
  * Voice commands, detected on normalized tokens. Grammar:
- *   prompter (back|up|rewind|backward[s]) [N]
- *   prompter (forward[s]|ahead|down|skip) [N]
- *   prompter (go back|go forward) [N]
- *   prompter hold | prompter pause | prompter stop
- *   prompter go | prompter resume
+ *   <wake> (back|up|rewind|backward[s]) [N]
+ *   <wake> (forward[s]|ahead|down|skip) [N]
+ *   <wake> (go back|go forward) [N]
+ *   <wake> hold | pause | stop | wait
+ *   <wake> go | resume | continue
  * N is one..twenty (digits arrive already expanded to words by normalize).
+ * The wake word is a set of aliases because the recognizer spells short words
+ * inconsistently ("cue" / "q" / "queue").
  */
 
-export const WAKE = 'prompter'
+export const DEFAULT_WAKE = ['cue', 'q', 'queue']
+export const WAKE = DEFAULT_WAKE[0]
+
+/** Parse a user-entered wake list: "cue, q, queue" -> normalized tokens. */
+export function parseWakeList(s: string): string[] {
+  return s
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .map((w) => w.replace(/[^a-z0-9]/g, ''))
+    .filter(Boolean)
+}
 
 export type Command =
   | { kind: 'back'; lines: number }
@@ -37,6 +49,7 @@ export interface ParsedCommands {
 
 /** Parse one command starting at tokens[i] === WAKE. Returns [command, tokensConsumed] or null. */
 function parseAt(tokens: string[], i: number): [Command, number] | null {
+  // tokens[i] is a wake word
   let j = i + 1
   if (tokens[j] === 'go' && (BACK.has(tokens[j + 1] ?? '') || FWD.has(tokens[j + 1] ?? ''))) j++
   const verb = tokens[j]
@@ -63,12 +76,12 @@ function parseAt(tokens: string[], i: number): [Command, number] | null {
   return [{ kind, lines }, j - i]
 }
 
-export function parseCommands(tokens: string[]): ParsedCommands {
+export function parseCommands(tokens: string[], wake: readonly string[] = DEFAULT_WAKE): ParsedCommands {
   const commands: Command[] = []
   let restFrom = 0
   let lastAt = -1
   for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i] !== WAKE) continue
+    if (!wake.includes(tokens[i])) continue
     const hit = parseAt(tokens, i)
     if (!hit) continue
     commands.push(hit[0])
@@ -80,7 +93,14 @@ export function parseCommands(tokens: string[]): ParsedCommands {
 }
 
 /** True if the tail of `tokens` could still become a command (wake word seen, verb pending). */
-export function pendingCommand(tokens: string[]): boolean {
-  const i = tokens.lastIndexOf(WAKE)
+export function pendingCommand(tokens: string[], wake: readonly string[] = DEFAULT_WAKE): boolean {
+  let i = -1
+  for (let k = tokens.length - 1; k >= 0; k--) if (wake.includes(tokens[k])) { i = k; break }
   return i >= 0 && parseAt(tokens, i) === null
+}
+
+/** Index of the last wake word in tokens, or -1. */
+export function lastWakeIndex(tokens: string[], wake: readonly string[]): number {
+  for (let k = tokens.length - 1; k >= 0; k--) if (wake.includes(tokens[k])) return k
+  return -1
 }
