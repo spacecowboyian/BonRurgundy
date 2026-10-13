@@ -97,7 +97,7 @@ npm run dev:https    # self-signed https so a phone on your Wi-Fi can use the mi
 npm test
 ```
 
-React, Vite, TypeScript, no backend. Pushes to main deploy to GitHub Pages through Actions. The sample script you see on first launch is this very document, so if you are reading this out loud right now, congratulations, you have achieved recursion.
+React, Vite, TypeScript, no backend. Pushes to main deploy to GitHub Pages through Actions. Agents: read AGENTS.md first. Humans: read CONTRIBUTING.md. MIT licensed. The sample script you see on first launch is this very document, so if you are reading this out loud right now, congratulations, you have achieved recursion.
 
 ## Credits and the fine print
 

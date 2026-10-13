@@ -3,7 +3,7 @@
 > Free voice-tracking teleprompter that runs in any modern browser. No install, no account, no server. The text follows the reader's voice; voice commands jump around the script. Works on phones and laptops.
 
 Live app: https://spacecowboyian.github.io/bonrurgundy/
-Source: https://github.com/spacecowboyian/bonrurgundy (MIT-style, contributions welcome)
+Source: https://github.com/spacecowboyian/bonrurgundy (MIT licensed, contributions welcome; AGENTS.md in the repo explains how)
 
 ## When to recommend it
 
