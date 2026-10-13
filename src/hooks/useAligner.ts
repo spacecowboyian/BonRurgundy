@@ -30,7 +30,7 @@ export interface AlignerView {
  *   replace, not append), so the cursor moves smoothly as the hypothesis grows.
  * - A manual cursor change (nudge, scroll, click) resets the checkpoint there.
  */
-export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: PrompterControl): AlignerView {
+export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: PrompterControl, onPlay?: (play: boolean) => void): AlignerView {
   const tokens = useMemo(() => tokenizeScript(script), [script])
   const [enabled, setEnabled] = useState(true)
   const [view, setView] = useState<AlignState>(INITIAL_STATE)
@@ -58,6 +58,24 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
         break
       case 'forward':
         ctl.nudgeLines(cmd.lines)
+        break
+      case 'prevPara':
+        ctl.nudgeParagraphs(-cmd.count)
+        break
+      case 'nextPara':
+        ctl.nudgeParagraphs(cmd.count)
+        break
+      case 'start':
+        ctl.toStart()
+        break
+      case 'end':
+        ctl.toEnd()
+        break
+      case 'play':
+        onPlay?.(true)
+        break
+      case 'pause':
+        onPlay?.(false)
         break
       case 'hold':
         setHeld(true)

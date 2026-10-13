@@ -25,13 +25,26 @@ export function parseWakeList(s: string | null | undefined): string[] {
 export type Command =
   | { kind: 'back'; lines: number }
   | { kind: 'forward'; lines: number }
+  | { kind: 'prevPara'; count: number }
+  | { kind: 'nextPara'; count: number }
+  | { kind: 'start' }
+  | { kind: 'end' }
+  | { kind: 'play' }
+  | { kind: 'pause' }
   | { kind: 'hold' }
   | { kind: 'go' }
 
-const BACK = new Set(['back', 'backward', 'backwards', 'up', 'rewind'])
+const BACK = new Set(['back', 'backward', 'backwards', 'up'])
 const FWD = new Set(['forward', 'forwards', 'ahead', 'down', 'skip'])
-const HOLD = new Set(['hold', 'pause', 'stop', 'wait'])
+const HOLD = new Set(['hold', 'wait', 'freeze'])
 const GO = new Set(['go', 'resume', 'continue'])
+const START = new Set(['start', 'beginning', 'top', 'restart', 'rewind'])
+const END = new Set(['end', 'bottom', 'finish'])
+const NEXT = new Set(['next'])
+const PREV = new Set(['previous', 'last', 'prior'])
+const PLAY = new Set(['play', 'scroll'])
+const PAUSE = new Set(['pause', 'stop'])
+const PARA = new Set(['paragraph', 'paragraphs', 'section', 'sections'])
 const NUM: Record<string, number> = {
   one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
@@ -54,26 +67,43 @@ function parseAt(tokens: string[], i: number): [Command, number] | null {
   if (tokens[j] === 'go' && (BACK.has(tokens[j + 1] ?? '') || FWD.has(tokens[j + 1] ?? ''))) j++
   const verb = tokens[j]
   if (!verb) return null
-  let kind: Command['kind'] | null = null
-  if (BACK.has(verb)) kind = 'back'
-  else if (FWD.has(verb)) kind = 'forward'
-  else if (HOLD.has(verb)) kind = 'hold'
-  else if (GO.has(verb)) kind = 'go'
-  if (!kind) return null
+  // "go to the start" / "go to end"
+  if (verb === 'go' && tokens[j + 1] === 'to') {
+    let k = j + 2
+    if (tokens[k] === 'the') k++
+    if (START.has(tokens[k] ?? '')) return [{ kind: 'start' }, k + 1 - i]
+    if (END.has(tokens[k] ?? '')) return [{ kind: 'end' }, k + 1 - i]
+  }
+  if (START.has(verb)) return [{ kind: 'start' }, j + 1 - i]
+  if (END.has(verb)) return [{ kind: 'end' }, j + 1 - i]
+  if (HOLD.has(verb)) return [{ kind: 'hold' }, j + 1 - i]
+  if (GO.has(verb)) return [{ kind: 'go' }, j + 1 - i]
+  if (PLAY.has(verb)) return [{ kind: 'play' }, j + 1 - i]
+  if (PAUSE.has(verb)) return [{ kind: 'pause' }, j + 1 - i]
+
+  let dir: 'back' | 'forward' | null = null
+  if (BACK.has(verb) || PREV.has(verb)) dir = 'back'
+  else if (FWD.has(verb) || NEXT.has(verb)) dir = 'forward'
+  if (!dir) return null
+  // "next"/"previous" default to paragraphs; "back"/"forward" default to lines.
+  let unit: 'line' | 'para' = NEXT.has(verb) || PREV.has(verb) ? 'para' : 'line'
   j++
-  if (kind === 'hold' || kind === 'go') return [{ kind }, j - i]
-  let lines = 1
-  // optional count and filler, in any order: "back two lines", "back lines two"
+  let n = 1
+  // optional count, unit and filler in any order: "back two paragraphs", "next paragraph"
   for (let k = 0; k < 3 && tokens[j]; k++) {
     const t = tokens[j]
     if (t in NUM) {
-      lines = NUM[t]
+      n = NUM[t]
+      j++
+    } else if (PARA.has(t)) {
+      unit = 'para'
       j++
     } else if (FILLER.has(t)) {
       j++
     } else break
   }
-  return [{ kind, lines }, j - i]
+  if (unit === 'para') return [{ kind: dir === 'back' ? 'prevPara' : 'nextPara', count: n }, j - i]
+  return [{ kind: dir, lines: n }, j - i]
 }
 
 export function parseCommands(tokens: string[], wake: readonly string[] = DEFAULT_WAKE): ParsedCommands {

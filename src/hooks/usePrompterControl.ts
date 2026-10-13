@@ -12,6 +12,12 @@ export interface PrompterControl {
   /** Move by rendered lines (negative = back). Needs setLines to have been called. */
   nudgeLines: (lines: number) => void
   setLines: (lineStarts: number[]) => void
+  /** Move by paragraphs (negative = back). Back from mid-paragraph goes to its start first. */
+  nudgeParagraphs: (n: number) => void
+  setParagraphStarts: (starts: number[]) => void
+  toStart: () => void
+  toEnd: () => void
+  setPlaying: (p: boolean) => void
   reset: () => void
 }
 
@@ -25,6 +31,7 @@ export function usePrompterControl(wordCount: number, initialWpm = 150): Prompte
   const [wpm, setWpmState] = useState(initialWpm)
   const acc = useRef(0) // fractional words accumulated
   const linesRef = useRef<number[]>([])
+  const parasRef = useRef<number[]>([])
   const wpmRef = useRef(wpm)
   wpmRef.current = wpm
 
@@ -90,6 +97,27 @@ export function usePrompterControl(wordCount: number, initialWpm = 150): Prompte
         }),
       [setCursor],
     ),
+    setParagraphStarts: useCallback((p: number[]) => {
+      parasRef.current = p
+    }, []),
+    nudgeParagraphs: useCallback(
+      (n: number) =>
+        setCursor((c) => {
+          const paras = parasRef.current
+          if (paras.length === 0) return c
+          let pi = 0
+          while (pi + 1 < paras.length && paras[pi + 1] <= c) pi++
+          // Like a track-back button: if we're a few words into a paragraph,
+          // "previous" first returns to its start.
+          const intoPara = c - paras[pi]
+          const target = n < 0 && intoPara > 3 ? pi + n + 1 : pi + n
+          return paras[Math.max(0, Math.min(paras.length - 1, target))]
+        }),
+      [setCursor],
+    ),
+    toStart: useCallback(() => setCursor(0), [setCursor]),
+    toEnd: useCallback(() => setCursor(Math.max(0, wordCount - 1)), [setCursor, wordCount]),
+    setPlaying: useCallback((p: boolean) => setPlaying(p), []),
     reset: useCallback(() => {
       setPlaying(false)
       setCursorState(0)

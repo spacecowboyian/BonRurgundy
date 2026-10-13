@@ -9,7 +9,7 @@ import { parseScript } from './lib/script'
 import { VideoLayer } from './components/VideoLayer'
 import { Hud } from './components/Hud'
 import { MicButton } from './components/MicButton'
-import { PlayButton } from './components/PlayButton'
+import { Transport } from './components/Transport'
 import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
 import { SpeechPanel } from './components/SpeechPanel'
@@ -44,7 +44,10 @@ export default function App() {
 
   const script = useMemo(() => parseScript(scriptText), [scriptText])
   const ctl = usePrompterControl(script.words.length)
-  const aligner = useAligner(script, speech, ctl)
+  useEffect(() => {
+    ctl.setParagraphStarts(script.paragraphs.map((p) => p[0].index))
+  }, [script]) // eslint-disable-line react-hooks/exhaustive-deps
+  const aligner = useAligner(script, speech, ctl, (play) => (play ? (ctl.playing ? undefined : togglePlayRef.current()) : ctl.setPlaying(false)))
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen()
@@ -66,6 +69,7 @@ export default function App() {
   }, [uiOpen, listening, speech])
 
   // Fixed-speed play and voice follow would fight over the cursor: one at a time.
+  const togglePlayRef = useRef<() => void>(() => {})
   const togglePlay = useCallback(() => {
     if (!ctl.playing) {
       resumeOnHide.current = false
@@ -73,6 +77,7 @@ export default function App() {
     }
     ctl.togglePlay()
   }, [ctl, listening, speech])
+  togglePlayRef.current = togglePlay
 
   const toggleMic = useCallback(() => {
     if (listening) {
@@ -90,7 +95,7 @@ export default function App() {
   // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
   const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
   useEffect(() => {
-    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.tap,.play,.mic,button,input,select,label')
+    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.transport,.mic,button,input,select,label')
     const onDown = (e: PointerEvent) => {
       if (editing || settingsOpen || isChrome(e.target)) return
       ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
@@ -158,7 +163,18 @@ export default function App() {
           setPrefs((p) => ({ ...p, fontSize: Math.max(3, p.fontSize - 0.5) }))
           break
         case 'Home':
-          ctl.reset()
+          ctl.toStart()
+          break
+        case 'End':
+          ctl.toEnd()
+          break
+        case 'PageUp':
+          e.preventDefault()
+          ctl.nudgeParagraphs(-1)
+          break
+        case 'PageDown':
+          e.preventDefault()
+          ctl.nudgeParagraphs(1)
           break
         case 'e':
         case 'E':
@@ -258,7 +274,7 @@ export default function App() {
         onEdit={() => setEditing(true)}
         onSettings={() => setSettingsOpen(true)}
       />
-      {!editing && <PlayButton playing={ctl.playing} onClick={togglePlay} />}
+      {!editing && <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />}
       {!editing && (
         <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />
       )}

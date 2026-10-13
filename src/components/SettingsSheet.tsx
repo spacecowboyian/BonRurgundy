@@ -76,7 +76,7 @@ export function SettingsSheet({ cam, cameraOn, setCameraOn, relay, speech, align
           <input type="text" value={aligner.wakeText} onChange={(e) => aligner.setWakeText(e.target.value)} placeholder="bob" />
         </div>
         <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-          Say "<b>{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back</b>", "… forward three", "… hold", "… go". Comma-separate aliases if it mishears.
+          Say "<b>{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back</b>" / "… forward three" (lines), "… next" / "… previous" / "… back two paragraphs", "… start" / "… end", "… play" / "… pause", "… hold" / "… go". Comma-separate aliases if it mishears.
         </div>
         <label className="toggle"><input type="checkbox" checked={aligner.enabled} onChange={(e) => aligner.setEnabled(e.target.checked)} /> Follow my voice</label>
         {speech.status === 'unsupported' && <div style={{ color: 'var(--warn)', fontSize: 12 }}>Speech recognition needs Chrome.</div>}

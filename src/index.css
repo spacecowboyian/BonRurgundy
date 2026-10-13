@@ -199,11 +199,16 @@ input[type="range"] { accent-color: var(--accent); }
   100% { transform: scale(1.5); opacity: 0; }
 }
 
-/* ---- Play button (left of the mic) ---- */
-.play {
+/* ---- Transport (left of the mic) ---- */
+.transport {
   position: fixed;
   left: calc(12px + var(--sal));
   bottom: calc(12px + var(--sab));
+  display: flex; gap: 8px;
+  z-index: 12;
+  touch-action: auto;
+}
+.transport button {
   width: 44px; height: 44px;
   padding: 0;
   border-radius: 22px;
@@ -212,7 +217,5 @@ input[type="range"] { accent-color: var(--accent); }
   border: 1px solid var(--line);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  z-index: 12;
-  touch-action: auto;
 }
-.mic { left: calc(64px + var(--sal)); }
+.mic { left: calc(12px + 5 * 52px + var(--sal)); }
