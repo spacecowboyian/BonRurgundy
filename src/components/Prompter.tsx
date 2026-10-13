@@ -94,12 +94,18 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
       // at the measured rate, capped so a pause doesn't run away.
       let c = a.cursor
       if (predict && a.rate > 0) {
-        const ahead = Math.min(2.5, a.rate * ((now - a.changedAt) / 1000))
+        // Drift at a fraction of the speaking rate so the text trails slightly
+        // rather than leads; the next recognizer update closes the gap.
+        const ahead = Math.min(1.2, a.rate * 0.6 * ((now - a.changedAt) / 1000))
         c = Math.min(script.words.length - 1, a.cursor + ahead)
       }
       const target = window.innerHeight * prefs.lineAt - targetYFor(c)
-      // Critically-damped-ish glide: time constant ~180ms.
-      const k = 1 - Math.exp(-dt / 0.18)
+      // Adaptive glide: unhurried when close (~380ms), quicker when it has
+      // fallen more than a line behind (down to ~140ms).
+      const lineH = fontPx(prefs) * 1.2
+      const behind = Math.abs(target - a.y) / lineH
+      const tau = Math.max(0.14, 0.38 - behind * 0.12)
+      const k = 1 - Math.exp(-dt / tau)
       a.y += (target - a.y) * k
       if (Math.abs(target - a.y) < 0.05) a.y = target
       box.style.transform = `translate3d(0, ${a.y}px, 0)`
