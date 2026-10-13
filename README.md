@@ -23,7 +23,7 @@ On a phone open `https://<mac-lan-ip>:5173`, accept the certificate warning once
 ## Use
 
 1. Paste or open a script (`.txt` / `.md`; markdown headings, speaker labels and stage directions are stripped). Tap Done.
-2. Tap to start. The mic opens and the text follows your voice.
+2. Tap the mic icon (bottom left) to follow your voice, or the play button to scroll at a fixed speed.
 3. Say **bob back** / **bob back two** / **bob forward three** to jump by lines, **bob hold** / **bob go** to freeze and resume. Swipe or scroll the text to move it by hand.
 4. Settings (gear): camera, frame rate, mic, wake word, text size, reading line, width, mirror.
 

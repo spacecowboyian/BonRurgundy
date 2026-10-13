@@ -27,13 +27,10 @@ export default function App() {
     if (prefs.fontSize > 20) setPrefsRaw((p) => ({ ...p, fontSize: DEFAULT_PREFS.fontSize }))
   }, [prefs.fontSize, setPrefsRaw])
   const setPrefs = setPrefsRaw
-  const [autoListen, setAutoListen] = useLocalState('osmo-prompter.autoListen', true)
   const [editing, setEditing] = useState(() => !scriptText.trim())
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [hudHidden, setHudHidden] = useState(false)
+  const [hudHidden, setHudHidden] = useState(true)
   const [debugOpen, setDebugOpen] = useState(false)
-  // Browsers need a user gesture before the mic can start; show a tap target.
-  const [needsTap, setNeedsTap] = useState(() => autoListen && !!scriptText.trim())
 
   // Receiving from the Mac: release the phone's own camera.
   useEffect(() => {
@@ -54,18 +51,11 @@ export default function App() {
     else document.documentElement.requestFullscreen?.().catch(() => {})
   }, [])
 
-  const begin = useCallback(() => {
-    setNeedsTap(false)
-    setHudHidden(true)
-    if (autoListen && speech.status !== 'listening') speech.start()
-  }, [autoListen, speech])
-
   // Showing any interface pauses listening; hiding it again resumes.
   const uiOpen = !hudHidden || settingsOpen || editing
   const resumeOnHide = useRef(false)
   const listening = speech.status === 'listening'
   useEffect(() => {
-    if (needsTap) return
     if (uiOpen && listening) {
       resumeOnHide.current = true
       speech.stop()
@@ -73,7 +63,7 @@ export default function App() {
       resumeOnHide.current = false
       speech.start()
     }
-  }, [uiOpen, listening, needsTap, speech])
+  }, [uiOpen, listening, speech])
 
   // Fixed-speed play and voice follow would fight over the cursor: one at a time.
   const togglePlay = useCallback(() => {
@@ -102,7 +92,7 @@ export default function App() {
   useEffect(() => {
     const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.tap,.play,.mic,button,input,select,label')
     const onDown = (e: PointerEvent) => {
-      if (editing || settingsOpen || needsTap || isChrome(e.target)) return
+      if (editing || settingsOpen || isChrome(e.target)) return
       ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
     }
     const onUp = (e: PointerEvent) => {
@@ -118,16 +108,14 @@ export default function App() {
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('pointerup', onUp)
     }
-  }, [editing, settingsOpen, needsTap])
+  }, [editing, settingsOpen])
 
   const closeEditor = useCallback(() => {
     if (!scriptText.trim()) return
     setEditing(false)
     setHudHidden(true)
     ctl.reset()
-    // Closing the editor is itself a gesture, so we can start right away.
-    if (autoListen && speech.status !== 'listening') speech.start()
-  }, [scriptText, ctl, autoListen, speech])
+  }, [scriptText, ctl])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -140,10 +128,6 @@ export default function App() {
         return
       }
       if (e.target instanceof HTMLSelectElement || e.target instanceof HTMLInputElement) return
-      if (needsTap) {
-        begin()
-        return
-      }
       switch (e.key) {
         case ' ':
           e.preventDefault()
@@ -208,14 +192,14 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing, settingsOpen, needsTap, begin, closeEditor, ctl, setPrefs, toggleMic, togglePlay, toggleFullscreen])
+  }, [editing, settingsOpen, closeEditor, ctl, setPrefs, toggleMic, togglePlay, toggleFullscreen])
 
   // Wheel / trackpad / touch scrolling on the text. Pixels are converted to
   // words using the current font size so the feel stays constant across sizes.
   const scrollAcc = useRef(0)
   const touchY = useRef<number | null>(null)
   useEffect(() => {
-    const blocked = () => editing || settingsOpen || needsTap
+    const blocked = () => editing || settingsOpen
     const pxPerWord = () => (fontPx(prefs) * 1.2) / 5 // ~7 words per line
     const applyDelta = (dy: number) => {
       scrollAcc.current += dy
@@ -255,7 +239,7 @@ export default function App() {
       window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('touchend', onTouchEnd)
     }
-  }, [editing, settingsOpen, needsTap, ctl, prefs])
+  }, [editing, settingsOpen, ctl, prefs])
 
   const voiceStatus = speech.status === 'listening' && aligner.enabled ? (aligner.held ? 'held' : aligner.state.status) : null
 
@@ -270,12 +254,12 @@ export default function App() {
       <Hud
         ctl={ctl}
         wordCount={script.words.length}
-        hidden={hudHidden || needsTap}
+        hidden={hudHidden}
         onEdit={() => setEditing(true)}
         onSettings={() => setSettingsOpen(true)}
       />
-      {!editing && !needsTap && <PlayButton playing={ctl.playing} onClick={togglePlay} />}
-      {!editing && !needsTap && (
+      {!editing && <PlayButton playing={ctl.playing} onClick={togglePlay} />}
+      {!editing && (
         <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />
       )}
       {debugOpen && <SpeechPanel speech={speech} aligner={aligner} hidden={false} />}
@@ -290,8 +274,6 @@ export default function App() {
           ctl={ctl}
           prefs={prefs}
           setPrefs={setPrefs}
-          autoListen={autoListen}
-          setAutoListen={setAutoListen}
           onClose={() => {
             setSettingsOpen(false)
             setHudHidden(true)
@@ -299,12 +281,6 @@ export default function App() {
         />
       )}
       {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={closeEditor} />}
-      {needsTap && !editing && (
-        <div className="tap" onClick={begin}>
-          <strong>Tap to start</strong>
-          <span>{autoListen ? 'Starts the mic and follows your voice' : 'Ready'}</span>
-        </div>
-      )}
     </>
   )
 }

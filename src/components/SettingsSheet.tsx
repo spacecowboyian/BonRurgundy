@@ -16,12 +16,10 @@ interface Props {
   ctl: PrompterControl
   prefs: PrompterPrefs
   setPrefs: (f: (p: PrompterPrefs) => PrompterPrefs) => void
-  autoListen: boolean
-  setAutoListen: (v: boolean) => void
   onClose: () => void
 }
 
-export function SettingsSheet({ cam, cameraOn, setCameraOn, relay, speech, aligner, ctl, prefs, setPrefs, autoListen, setAutoListen, onClose }: Props) {
+export function SettingsSheet({ cam, cameraOn, setCameraOn, relay, speech, aligner, ctl, prefs, setPrefs, onClose }: Props) {
   const capsText = cam.info?.caps
     ? `device offers up to ${cam.info.caps.width?.max ?? '?'}×${cam.info.caps.height?.max ?? '?'}, ${cam.info.caps.frameRate?.max ?? '?'} fps`
     : null
@@ -81,7 +79,6 @@ export function SettingsSheet({ cam, cameraOn, setCameraOn, relay, speech, align
           Say "<b>{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back</b>", "… forward three", "… hold", "… go". Comma-separate aliases if it mishears.
         </div>
         <label className="toggle"><input type="checkbox" checked={aligner.enabled} onChange={(e) => aligner.setEnabled(e.target.checked)} /> Follow my voice</label>
-        <label className="toggle"><input type="checkbox" checked={autoListen} onChange={(e) => setAutoListen(e.target.checked)} /> Start listening when a script is loaded</label>
         {speech.status === 'unsupported' && <div style={{ color: 'var(--warn)', fontSize: 12 }}>Speech recognition needs Chrome.</div>}
         {speech.error && <div style={{ color: 'var(--warn)', fontSize: 12 }}>{speech.error}</div>}
 
