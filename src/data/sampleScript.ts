@@ -16,4 +16,10 @@ function section(md: string, heading: string): string {
   return lines.slice(start + 1, end).join('\n')
 }
 
-export const SAMPLE_SCRIPT = tidyScript(section(readme, '# BonRurgundy'))
+/** Cut the sample at the end of the pitch, before the live-app link. */
+function upTo(text: string, marker: string): string {
+  const i = text.indexOf(marker)
+  return i < 0 ? text : text.slice(0, i + marker.length)
+}
+
+export const SAMPLE_SCRIPT = upTo(tidyScript(section(readme, '# BonRurgundy')), 'works every time.')

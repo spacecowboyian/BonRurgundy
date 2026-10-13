@@ -33,8 +33,8 @@ export default function App() {
       setScriptText(SAMPLE_SCRIPT)
     } else if (/^<p align="center">/.test(scriptText) || /^BonRurgundy is a prompter first\./.test(scriptText)) {
       setScriptText(SAMPLE_SCRIPT) // earlier samples: whole README, or the 'prompter first' section
-    } else if (/^A teleprompter that actually listens to you\./.test(scriptText) && scriptText.length > 1500) {
-      setScriptText(SAMPLE_SCRIPT) // the whole-README sample
+    } else if (/^A teleprompter that actually listens to you\./.test(scriptText) && scriptText !== SAMPLE_SCRIPT && /The live app is here/.test(scriptText)) {
+      setScriptText(SAMPLE_SCRIPT) // older, longer samples
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [prefs, setPrefsRaw] = useLocalState<PrompterPrefs>('osmo-prompter.prefs2', DEFAULT_PREFS)
