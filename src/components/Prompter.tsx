@@ -52,6 +52,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
     changedAt: 0,
     rate: 0, // words/sec, slow EMA = your pace
     raf: 0,
+    fast: false, // a deliberate jump (command, manual move): allow quick travel
   })
   const predict = status === 'tracking'
 
@@ -65,6 +66,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
       a.rate = a.rate ? a.rate * 0.9 + inst * 0.1 : inst
     } else if (delta < -8 || delta > 8) {
       a.rate = 0 // jump or manual move: re-measure pace
+      a.fast = true
     }
     // Small backward moves are interim-hypothesis corrections; keep the pace
     // and don't count them as "a new word arrived".
@@ -108,10 +110,18 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
         }
       } else {
         // Not tracking (paused, riffing, held, manual): settle onto the cursor.
-        vCmd = error * (Math.abs(error) > 2 * lineH ? 6 : 2.5)
+        vCmd = error * (a.fast ? 6 : 2.5)
+      }
+      // Speed limit for ordinary reading motion: paragraph gaps and catch-up
+      // roll through at a readable speed. Only deliberate jumps go fast.
+      if (a.fast && Math.abs(error) < 0.3 * lineH) a.fast = false
+      if (!a.fast) {
+        const paceAbs = a.rate > 0 ? a.rate * (lineH / 5) : 0
+        const vMax = Math.max(1.6 * paceAbs, 1.1 * lineH) // px/s
+        vCmd = Math.max(-vMax, Math.min(vMax, vCmd))
       }
       // Ease velocity so starts, stops and pace changes are gradual.
-      const tau = Math.abs(error) > 2 * lineH ? 0.12 : predict ? 0.8 : 0.45
+      const tau = a.fast ? 0.12 : predict ? 0.8 : 0.45
       a.v += (vCmd - a.v) * (1 - Math.exp(-dt / tau))
       a.y += a.v * dt
       if (Math.abs(error) < 0.05 && Math.abs(a.v) < 0.5) {
