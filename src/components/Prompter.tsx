@@ -39,102 +39,20 @@ interface Props {
 export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const translateRef = useRef(0)
 
   const clampedCursor = Math.max(0, Math.min(cursor, script.words.length - 1))
 
-  // Velocity-based motion. The text rolls at your averaged speaking pace like
-  // a prompter on "play"; the recognizer only nudges the speed so the reading
-  // line stays locked. Stop talking and it glides to a halt.
-  const anim = useRef({
-    y: 0, // current translateY (px)
-    v: 0, // current velocity (px/s, negative = text moving up)
-    cursor: 0,
-    changedAt: 0,
-    rate: 0, // words/sec, slow EMA = your pace
-    raf: 0,
-    fast: false, // a deliberate jump (command, manual move): allow quick travel
-  })
-  const predict = status === 'tracking'
-
-  useEffect(() => {
-    const a = anim.current
-    const now = performance.now()
-    const delta = clampedCursor - a.cursor
-    const dt = (now - a.changedAt) / 1000
-    if (a.changedAt && delta > 0 && delta <= 8 && dt > 0.05 && dt < 4) {
-      const inst = delta / dt
-      a.rate = a.rate ? a.rate * 0.9 + inst * 0.1 : inst
-    } else if (delta < -8 || delta > 8) {
-      a.rate = 0 // jump or manual move: re-measure pace
-      a.fast = true
-    }
-    // Small backward moves are interim-hypothesis corrections; keep the pace
-    // and don't count them as "a new word arrived".
-    if (delta > 0 || Math.abs(delta) > 8) a.changedAt = now
-    a.cursor = clampedCursor
-  }, [clampedCursor])
-
-  const yOfWord = (i: number) => {
-    const el = wordRefs.current[Math.max(0, Math.min(i, script.words.length - 1))]
-    return el ? el.offsetTop + el.offsetHeight / 2 : 0
-  }
-
-  useEffect(() => {
-    const a = anim.current
+  useLayoutEffect(() => {
+    const el = wordRefs.current[clampedCursor]
     const box = scrollRef.current
-    if (!box) return
-    let last = performance.now()
-    const tick = (now: number) => {
-      const dt = Math.min(0.1, (now - last) / 1000)
-      last = now
-      const lineH = fontPx(prefs) * 1.2
-      const desired = window.innerHeight * prefs.lineAt - yOfWord(a.cursor)
-      const error = desired - a.y // negative: we are behind, need to move up
-
-      let vCmd: number
-      const sinceWord = (now - a.changedAt) / 1000
-      if (predict && a.rate > 0 && sinceWord < 1.6) {
-        // Pace in px/s from the local layout (handles wraps and paragraph gaps).
-        const n = 8
-        const pxPerWord = (yOfWord(a.cursor + n) - yOfWord(a.cursor)) / n || lineH / 5
-        const pace = -a.rate * pxPerWord
-        if (error > 0) {
-          // We're ahead of the confirmed word: never reverse, just ease off.
-          // Fully stopped once a line and a half ahead.
-          vCmd = pace * Math.max(0, 1 - error / (1.5 * lineH))
-        } else {
-          // Behind: pace plus a soft catch-up, with a dead band so interim
-          // jitter doesn't show.
-          const lag = Math.max(0, -error - 0.4 * lineH)
-          vCmd = pace - lag * 0.8
-        }
-      } else {
-        // Not tracking (paused, riffing, held, manual): settle onto the cursor.
-        vCmd = error * (a.fast ? 6 : 2.5)
-      }
-      // Speed limit for ordinary reading motion: paragraph gaps and catch-up
-      // roll through at a readable speed. Only deliberate jumps go fast.
-      if (a.fast && Math.abs(error) < 0.3 * lineH) a.fast = false
-      if (!a.fast) {
-        const paceAbs = a.rate > 0 ? a.rate * (lineH / 5) : 0
-        const vMax = Math.max(1.6 * paceAbs, 1.1 * lineH) // px/s
-        vCmd = Math.max(-vMax, Math.min(vMax, vCmd))
-      }
-      // Ease velocity so starts, stops and pace changes are gradual.
-      const tau = a.fast ? 0.12 : predict ? 0.8 : 0.45
-      a.v += (vCmd - a.v) * (1 - Math.exp(-dt / tau))
-      a.y += a.v * dt
-      if (Math.abs(error) < 0.05 && Math.abs(a.v) < 0.5) {
-        a.y = desired
-        a.v = 0
-      }
-      box.style.transform = `translate3d(0, ${a.y}px, 0)`
-      a.raf = requestAnimationFrame(tick)
-    }
-    a.raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(a.raf)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [predict, prefs.lineAt, prefs.fontSize, prefs.width, script])
+    if (!el || !box) return
+    const targetY = window.innerHeight * prefs.lineAt
+    // offsetTop is relative to the scroll container (position: relative).
+    const y = el.offsetTop + el.offsetHeight / 2
+    translateRef.current = targetY - y
+    box.style.transform = `translateY(${translateRef.current}px)`
+  }, [clampedCursor, prefs.lineAt, prefs.fontSize, prefs.width, script])
 
   // Real line boundaries from the DOM, for "back N lines" style navigation.
   useLayoutEffect(() => {
@@ -207,6 +125,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
           lineHeight: 1.2,
           fontWeight: 600,
           textShadow: '0 2px 12px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)',
+          transition: 'transform 220ms cubic-bezier(.2,.8,.2,1)',
           willChange: 'transform',
           paddingTop: '50vh',
           paddingBottom: '80vh',
