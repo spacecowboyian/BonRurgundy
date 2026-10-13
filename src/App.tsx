@@ -319,9 +319,9 @@ export default function App() {
       {!editing && <ScrollBar cursor={ctl.cursor} wordCount={script.words.length} visibleFraction={visibleFraction} onSeek={ctl.setCursor} />}
       {!editing && <RightDock />}
       {toast && <div className="toast">{toast}</div>}
+      {!editing && <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />}
       {!editing && (
         <div className="center-dock">
-          <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />
           <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} guide={!micGuided && !listening} />
         </div>
       )}

@@ -262,7 +262,7 @@ input[type="range"] { accent-color: var(--accent); }
   z-index: 12;
   touch-action: auto;
 }
-.dock.left { position: static; }
+.dock.left { left: calc(12px + var(--sal)); }
 .center-dock {
   position: fixed;
   left: 50%; bottom: calc(12px + var(--sab));
