@@ -4,6 +4,6 @@
  *   Venmo:  your Venmo username without the @ (e.g. "Ian-Jennings-1")
  */
 export const DONATE = {
-  paypal: '',
-  venmo: '',
+  paypal: 'oioian',
+  venmo: 'Ian-Jennings-17',
 }

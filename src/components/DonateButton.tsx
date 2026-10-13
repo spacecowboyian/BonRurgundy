@@ -10,8 +10,9 @@ export function DonateButton() {
   return (
     <>
       <button className="donate" onClick={() => setOpen((v) => !v)} title="Support this project" aria-label="Donate" aria-expanded={open}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill={open ? '#ff3b30' : 'none'} stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2v20" />
+          <path d="M17 6.5c-1-1.5-2.5-2-5-2-3 0-5 1.5-5 3.5s2 3 5 3.5 5 1.5 5 3.5-2 3.5-5 3.5c-2.5 0-4-.5-5-2" />
         </svg>
       </button>
       {open && (
