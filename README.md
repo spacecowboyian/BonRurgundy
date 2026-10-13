@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/spacecowboyian/bonrurgundy/main/public/icon-512.png?v=3" width="160" alt="BonRurgundy"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/spacecowboyian/BonRurgundy/main/public/icon-512.png?v=3" width="160" alt="BonRurgundy"></p>
 
 # BonRurgundy
 

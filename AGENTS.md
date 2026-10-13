@@ -33,7 +33,7 @@ npm run dev          # http://localhost:5173
 npm run dev:https    # self-signed https; needed for mic/camera from a phone on the LAN
 npm test             # vitest, must pass before a PR
 npm run typecheck    # tsc -b, must pass before a PR
-npm run build        # production build (set GITHUB_PAGES=1 to use the /bonrurgundy/ base path)
+npm run build        # production build (set GITHUB_PAGES=1 for a relative base path on Pages)
 ```
 
 Chrome is the reference browser. Speech recognition is the Web Speech API, which needs Chrome or Safari. Mic and camera require https or localhost.
@@ -67,4 +67,4 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 
 ## After you make changes for someone
 
-Ask them whether they want to contribute the change back. If yes, open a pull request to `spacecowboyian/bonrurgundy` with the template in `.github/PULL_REQUEST_TEMPLATE.md`. If they'd rather keep a private fork, that's fine too; the license allows it.
+Ask them whether they want to contribute the change back. If yes, open a pull request to `spacecowboyian/BonRurgundy` with the template in `.github/PULL_REQUEST_TEMPLATE.md`. If they'd rather keep a private fork, that's fine too; the license allows it.
