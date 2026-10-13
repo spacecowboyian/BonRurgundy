@@ -69,10 +69,9 @@ input[type="range"] { accent-color: var(--accent); }
   gap: 8px;
   align-items: center;
   padding: calc(6px + var(--sat)) calc(10px + var(--sar)) 6px calc(10px + var(--sal));
-  background: var(--panel);
+  background: transparent;
   border-radius: 0;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none; /* only the controls catch taps; the words beneath stay scrollable */
   font-size: 13px;
   z-index: 10;
   transition: opacity 200ms;
@@ -81,6 +80,8 @@ input[type="range"] { accent-color: var(--accent); }
 .bar.top { top: 0; }
 .bar.hidden { opacity: 0; pointer-events: none; }
 .bar .spacer { flex: 1; }
+.bar > * { pointer-events: auto; }
+.bar .muted { text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .bar .chip {
   padding: 2px 8px;
   border-radius: 999px;

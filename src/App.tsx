@@ -57,7 +57,6 @@ export default function App() {
         setScriptText(tidyScript(text))
         setLoadNote(null)
         setEditing(false)
-        setHudHidden(true)
         ctl.reset()
       })
       .catch((e) => {
@@ -73,7 +72,6 @@ export default function App() {
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [hudHidden, setHudHidden] = useState(true)
   const [debugOpen, setDebugOpen] = useState(false)
 
   // Once the Mac's feed actually arrives, release the phone's own camera.
@@ -99,7 +97,7 @@ export default function App() {
   }, [])
 
   // Showing any interface pauses listening; hiding it again resumes.
-  const uiOpen = !hudHidden || settingsOpen || editing
+  const uiOpen = settingsOpen || editing
   const resumeOnHide = useRef(false)
   const listening = speech.status === 'listening'
   useEffect(() => {
@@ -130,39 +128,14 @@ export default function App() {
     } else {
       resumeOnHide.current = false
       if (ctl.playing) ctl.togglePlay()
-      setHudHidden(true)
       setSettingsOpen(false)
       speech.start()
     }
   }, [listening, speech, ctl])
 
-  // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
-  const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
-  useEffect(() => {
-    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.dock,.mic,.donate-sheet,.scrollbar,button,input,select,label,a')
-    const onDown = (e: PointerEvent) => {
-      if (editing || settingsOpen || isChrome(e.target)) return
-      ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
-    }
-    const onUp = (e: PointerEvent) => {
-      const p = ptr.current
-      ptr.current = null
-      if (!p || isChrome(e.target)) return
-      const moved = Math.hypot(e.clientX - p.x, e.clientY - p.y)
-      if (moved < 12 && performance.now() - p.t < 500) setHudHidden((v) => !v)
-    }
-    window.addEventListener('pointerdown', onDown)
-    window.addEventListener('pointerup', onUp)
-    return () => {
-      window.removeEventListener('pointerdown', onDown)
-      window.removeEventListener('pointerup', onUp)
-    }
-  }, [editing, settingsOpen])
-
   const closeEditor = useCallback(() => {
     if (!scriptText.trim()) return
     setEditing(false)
-    setHudHidden(true)
     ctl.reset()
   }, [scriptText, ctl])
 
@@ -224,10 +197,6 @@ export default function App() {
         case 'E':
           e.preventDefault()
           setEditing(true)
-          break
-        case 'h':
-        case 'H':
-          setHudHidden((v) => !v)
           break
         case 'm':
         case 'M':
@@ -325,7 +294,7 @@ export default function App() {
         ctl={ctl}
         cameraNote={cameraOn && cam.status !== 'live' ? (cam.error ? `camera: ${cam.error}` : cam.status === 'requesting' ? 'camera…' : 'camera: no stream') : null}
         wordCount={script.words.length}
-        hidden={hudHidden}
+        hidden={false}
         onEdit={() => setEditing(true)}
         onSettings={() => setSettingsOpen(true)}
       />
@@ -347,10 +316,7 @@ export default function App() {
           ctl={ctl}
           prefs={prefs}
           setPrefs={setPrefs}
-          onClose={() => {
-            setSettingsOpen(false)
-            setHudHidden(true)
-          }}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
       {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={closeEditor} note={loadNote} />}

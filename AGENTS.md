@@ -51,7 +51,7 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 - Put logic in `src/lib/` as pure functions with vitest tests. Hooks and components stay thin.
 - Never accept script text in the URL. Only `?script=<url>` pointing at a file. See `scriptUrl.ts`.
 - Any scroll smoothing must not fight manual drag or swipe. A velocity model was tried and reverted for that reason.
-- Keep the chrome minimal: only the words by default, bars appear on tap, transport and mic always visible. Showing UI pauses the mic.
+- Keep the chrome minimal: words, a transparent top bar, the bottom docks and the mic. Opening settings or the editor pauses the mic.
 - No current-word highlight. Read words dim.
 - Voice commands fire from the recognizer's interim hypothesis and are stripped before alignment. Stop words never start an alignment jump.
 - iOS allows one capture stream: do not open a second getUserMedia for the mic there (`useSpeech` handles it).

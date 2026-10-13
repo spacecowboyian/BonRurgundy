@@ -26,7 +26,7 @@ Open the app. Paste your script, open a text or markdown file, or drop one onto 
 
 Tap the microphone at the bottom left. The browser asks for the mic once. Start reading.
 
-Tap the words to show the top bar, which holds the word count, the script button and the settings gear. Tap the words again to hide it. Showing the bar pauses the microphone so you can fiddle without it listening.
+The top bar holds the word count, the script button and the settings gear. Opening the script or the settings pauses the microphone so you can fiddle without it listening.
 
 Swipe or scroll the text any time to move it by hand. There is a thin progress bar on the right edge that shows how far along you are, and you can drag it like a scrollbar to jump anywhere. The prompter picks you back up from wherever you land.
 
