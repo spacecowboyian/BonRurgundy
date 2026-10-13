@@ -14,6 +14,7 @@ import { Hud } from './components/Hud'
 import { MicButton } from './components/MicButton'
 import { Transport } from './components/Transport'
 import { DonateButton } from './components/DonateButton'
+import { GitHubButton } from './components/GitHubButton'
 import { ScrollBar } from './components/ScrollBar'
 import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
@@ -139,7 +140,7 @@ export default function App() {
   // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
   const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
   useEffect(() => {
-    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.transport,.mic,.donate,.donate-sheet,.scrollbar,button,input,select,label,a')
+    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.transport,.mic,.donate,.donate-sheet,.github,.scrollbar,button,input,select,label,a')
     const onDown = (e: PointerEvent) => {
       if (editing || settingsOpen || isChrome(e.target)) return
       ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
@@ -277,7 +278,7 @@ export default function App() {
     }
     const onTouchStart = (e: TouchEvent) => {
       if (blocked()) return
-      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.transport,.mic,.donate')) return
+      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.transport,.mic,.donate,.github')) return
       touchY.current = e.touches[0].clientY
     }
     const onTouchMove = (e: TouchEvent) => {
@@ -330,6 +331,7 @@ export default function App() {
         onSettings={() => setSettingsOpen(true)}
       />
       {!editing && <ScrollBar cursor={ctl.cursor} wordCount={script.words.length} visibleFraction={visibleFraction} onSeek={ctl.setCursor} />}
+      {!editing && <GitHubButton />}
       {!editing && <DonateButton />}
       {!editing && <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />}
       {!editing && (

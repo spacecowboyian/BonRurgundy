@@ -48,7 +48,8 @@ button.primary { background: var(--accent); color: #000; font-weight: 600; borde
 button.icon { width: 40px; padding: 0; font-size: 18px; }
 button.bare { width: 44px; height: 44px; background: transparent; border: none; display: inline-flex; align-items: center; justify-content: center; }
 button.bare:hover { background: rgba(255,255,255,0.08); }
-button.round { width: 44px; height: 44px; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); }
+button.round { width: 44px; height: 44px; padding: 0; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); line-height: 0; }
+button.round svg, .mic svg, .donate svg, .github svg { display: block; }
 button:disabled { opacity: 0.4; cursor: default; }
 input[type="text"] {
   background: rgba(255, 255, 255, 0.08);
@@ -199,26 +200,53 @@ input[type="range"] { accent-color: var(--accent); }
   100% { transform: scale(1.5); opacity: 0; }
 }
 
-/* ---- Transport (left of the mic) ---- */
+/* ---- Transport (bottom left, collapsible) ---- */
 .transport {
   position: fixed;
   left: calc(12px + var(--sal));
   bottom: calc(12px + var(--sab));
-  display: flex; gap: 8px;
+  display: flex; align-items: center; gap: 8px;
   z-index: 12;
   touch-action: auto;
 }
-.transport button {
+.transport .extra {
+  display: flex; gap: 8px;
+  max-width: 0; opacity: 0;
+  overflow: hidden;
+  transform: translateX(-12px);
+  transition: max-width 280ms cubic-bezier(.2,.8,.2,1), opacity 200ms, transform 280ms cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+.transport.open .extra {
+  max-width: 220px; opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.transport .chevron {
+  width: 32px; height: 44px; padding: 0;
+  background: transparent; border: none; border-radius: 0;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
+}
+.transport .chevron svg { transition: transform 280ms cubic-bezier(.2,.8,.2,1); }
+.transport.open .chevron svg { transform: rotate(180deg); }
+.mic { left: 50%; transform: translateX(-50%); }
+
+/* ---- GitHub link (left of donate) ---- */
+.github {
+  position: fixed;
+  right: calc(64px + var(--sar));
+  bottom: calc(12px + var(--sab));
   width: 44px; height: 44px;
-  padding: 0;
   border-radius: 22px;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.55);
   border: 1px solid var(--line);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  z-index: 12;
+  touch-action: auto;
 }
-.mic { left: calc(12px + 5 * 52px + var(--sal)); }
 
 /* ---- Donate ---- */
 .donate {
