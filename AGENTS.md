@@ -52,7 +52,7 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 - Never accept script text in the URL. Only `?script=<url>` pointing at a file. See `scriptUrl.ts`.
 - Any scroll smoothing must not fight manual drag or swipe. A velocity model was tried and reverted for that reason.
 - Keep the chrome minimal: words, a transparent top bar, the bottom docks and the mic. Opening settings or the editor pauses the mic.
-- No current-word highlight. Read words dim.
+- The next word to read is highlighted yellow; read words dim.
 - Voice commands fire from the recognizer's interim hypothesis and are stripped before alignment. Stop words never start an alignment jump.
 - iOS allows one capture stream: do not open a second getUserMedia for the mic there (`useSpeech` handles it).
 - The README is written to be read aloud. Keep it prose, no tables or code in the opening section, no real names from the film it nods to.

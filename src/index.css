@@ -176,9 +176,7 @@ input[type="range"] { accent-color: var(--accent); }
 
 /* ---- Mic indicator ---- */
 .mic {
-  position: fixed;
-  left: calc(12px + var(--sal));
-  bottom: calc(12px + var(--sab));
+  position: relative;
   width: 44px; height: 44px;
   padding: 0;
   border-radius: 22px;
@@ -264,7 +262,15 @@ input[type="range"] { accent-color: var(--accent); }
   z-index: 12;
   touch-action: auto;
 }
-.dock.left { left: calc(12px + var(--sal)); }
+.dock.left { position: static; }
+.center-dock {
+  position: fixed;
+  left: 50%; bottom: calc(12px + var(--sab));
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  z-index: 12;
+  touch-action: auto;
+}
 .dock.right { right: calc(12px + var(--sar)); }
 .dock .extra {
   display: flex; gap: 8px;
@@ -292,7 +298,6 @@ input[type="range"] { accent-color: var(--accent); }
 .dock.open .chevron svg { transform: rotate(180deg); }
 .dock .round { -webkit-touch-callout: none; user-select: none; }
 .dock a.round { text-decoration: none; }
-.mic { left: 50%; transform: translateX(-50%); }
 
 /* Touch devices: no chevrons, long-press the play or dollar button instead. */
 @media (hover: none) and (pointer: coarse) {
@@ -314,3 +319,10 @@ input[type="range"] { accent-color: var(--accent); }
   animation: toast-in 150ms ease-out;
 }
 @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ---- First-visit guide on the mic ---- */
+.mic.guide { animation: micguide 1.6s ease-in-out infinite; }
+@keyframes micguide {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,204,51,0.0), 0 0 0 0 rgba(255,204,51,0.6); }
+  50% { box-shadow: 0 0 18px 4px rgba(255,204,51,0.55), 0 0 0 8px rgba(255,204,51,0.15); }
+}

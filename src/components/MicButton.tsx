@@ -2,14 +2,16 @@ interface Props {
   listening: boolean
   disabled?: boolean
   onClick: () => void
+  /** First visit: pulse with a glow until the user taps it. */
+  guide?: boolean
 }
 
 /** Always-visible mic indicator, lower left. Red = listening, white slashed = not. */
-export function MicButton({ listening, disabled, onClick }: Props) {
+export function MicButton({ listening, disabled, onClick, guide }: Props) {
   const color = listening ? '#ff3b30' : '#fff'
   return (
     <button
-      className="mic"
+      className={`mic${guide ? ' guide' : ''}`}
       onClick={onClick}
       disabled={disabled}
       title={listening ? 'Listening. Tap to stop.' : 'Not listening. Tap to start.'}

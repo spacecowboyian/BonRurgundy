@@ -33,8 +33,8 @@ export default function App() {
       setScriptText(SAMPLE_SCRIPT)
     } else if (/^<p align="center">/.test(scriptText) || /^BonRurgundy is a prompter first\./.test(scriptText)) {
       setScriptText(SAMPLE_SCRIPT) // earlier samples: whole README, or the 'prompter first' section
-    } else if (/^A teleprompter that actually listens to you\./.test(scriptText) && scriptText !== SAMPLE_SCRIPT && /The live app is here/.test(scriptText)) {
-      setScriptText(SAMPLE_SCRIPT) // older, longer samples
+    } else if (/^A teleprompter that actually listens to you\./.test(scriptText) && scriptText !== SAMPLE_SCRIPT && (/The live app is here/.test(scriptText) || /\bBonRurgundy\b/.test(scriptText))) {
+      setScriptText(SAMPLE_SCRIPT) // older samples
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [prefs, setPrefsRaw] = useLocalState<PrompterPrefs>('osmo-prompter.prefs2', DEFAULT_PREFS)
@@ -100,6 +100,7 @@ export default function App() {
   const uiOpen = settingsOpen || editing
   const resumeOnHide = useRef(false)
   const listening = speech.status === 'listening'
+  const [micGuided, setMicGuided] = useLocalState('osmo-prompter.micTapped', false)
   useEffect(() => {
     if (uiOpen && listening) {
       resumeOnHide.current = true
@@ -122,6 +123,7 @@ export default function App() {
   togglePlayRef.current = togglePlay
 
   const toggleMic = useCallback(() => {
+    setMicGuided(true)
     if (listening) {
       resumeOnHide.current = false
       speech.stop()
@@ -246,7 +248,7 @@ export default function App() {
     }
     const onTouchStart = (e: TouchEvent) => {
       if (blocked()) return
-      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.dock,.mic,.donate-sheet')) return
+      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.dock,.center-dock,.mic,.donate-sheet')) return
       touchY.current = e.touches[0].clientY
     }
     const onTouchMove = (e: TouchEvent) => {
@@ -317,9 +319,11 @@ export default function App() {
       {!editing && <ScrollBar cursor={ctl.cursor} wordCount={script.words.length} visibleFraction={visibleFraction} onSeek={ctl.setCursor} />}
       {!editing && <RightDock />}
       {toast && <div className="toast">{toast}</div>}
-      {!editing && <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />}
       {!editing && (
-        <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />
+        <div className="center-dock">
+          <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />
+          <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} guide={!micGuided && !listening} />
+        </div>
       )}
       {debugOpen && <SpeechPanel speech={speech} aligner={aligner} hidden={false} />}
       {settingsOpen && (

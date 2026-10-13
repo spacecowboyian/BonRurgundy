@@ -145,7 +145,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
                   wordRefs.current[w.index] = el
                 }}
                 style={{
-                  color: w.index < clampedCursor ? 'rgba(255,255,255,0.35)' : '#fff',
+                  color: w.index < clampedCursor ? 'rgba(255,255,255,0.35)' : w.index === clampedCursor ? 'var(--accent)' : '#fff',
                   transition: 'color 400ms',
                 }}
               >

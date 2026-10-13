@@ -22,4 +22,5 @@ function upTo(text: string, marker: string): string {
   return i < 0 ? text : text.slice(0, i + marker.length)
 }
 
-export const SAMPLE_SCRIPT = upTo(tidyScript(section(readme, '# BonRurgundy')), 'works every time.')
+/** The recognizer hears two words, so the sample spells it that way. */
+export const SAMPLE_SCRIPT = upTo(tidyScript(section(readme, '# BonRurgundy')), 'works every time.').replace(/BonRurgundy/g, 'Bon Rurgundy')
