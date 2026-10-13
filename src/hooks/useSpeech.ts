@@ -31,6 +31,8 @@ export interface UseSpeechResult {
 }
 
 const LS_MIC = 'osmo-prompter.micDeviceId'
+/** iOS Safari allows one capture stream at a time: a mic getUserMedia would kill the camera. */
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 const LOG_CAP = 200
 
 type SR = SpeechRecognition
@@ -90,7 +92,7 @@ export function useSpeech(lang = 'en-US'): UseSpeechResult {
   const openMic = useCallback(async () => {
     micStreamRef.current?.getTracks().forEach((t) => t.stop())
     micStreamRef.current = null
-    if (!micId) return
+    if (!micId || IS_IOS) return
     try {
       micStreamRef.current = await navigator.mediaDevices.getUserMedia({
         audio: { deviceId: { exact: micId } },

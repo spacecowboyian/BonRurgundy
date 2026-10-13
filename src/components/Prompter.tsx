@@ -43,6 +43,8 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
 
   const clampedCursor = Math.max(0, Math.min(cursor, script.words.length - 1))
 
+  // Scroll by line, not by word: the text only moves when the cursor enters a
+  // new rendered line, so it never creeps off the top mid-line.
   useLayoutEffect(() => {
     const el = wordRefs.current[clampedCursor]
     const box = scrollRef.current
@@ -50,8 +52,10 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
     const targetY = window.innerHeight * prefs.lineAt
     // offsetTop is relative to the scroll container (position: relative).
     const y = el.offsetTop + el.offsetHeight / 2
-    translateRef.current = targetY - y
-    box.style.transform = `translateY(${translateRef.current}px)`
+    const next = targetY - y
+    if (Math.abs(next - translateRef.current) < 1) return
+    translateRef.current = next
+    box.style.transform = `translateY(${next}px)`
   }, [clampedCursor, prefs.lineAt, prefs.fontSize, prefs.width, script])
 
   // Real line boundaries from the DOM, for "back N lines" style navigation.
@@ -86,6 +90,9 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
   }, [prefs.fontSize, prefs.width, onLayout])
 
   const paragraphs = useMemo(() => script.paragraphs, [script])
+  // Keep the current line fully opaque even when the reading line sits high.
+  const fadeTop = Math.max(1, Math.min(8, prefs.lineAt * 100 - 6))
+  const mask = `linear-gradient(to bottom, transparent 0%, black ${fadeTop}%, black 78%, transparent 100%)`
 
   return (
     <div
@@ -96,10 +103,8 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
         pointerEvents: 'none',
         transform: prefs.mirror ? 'scaleX(-1)' : undefined,
         // Fade top and bottom so the text reads as a band around the reading line.
-        maskImage:
-          'linear-gradient(to bottom, transparent 0%, black 8%, black 78%, transparent 100%)',
-        WebkitMaskImage:
-          'linear-gradient(to bottom, transparent 0%, black 8%, black 78%, transparent 100%)',
+        maskImage: mask,
+        WebkitMaskImage: mask,
       }}
     >
       {/* Reading line marker */}
@@ -125,7 +130,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
           lineHeight: 1.2,
           fontWeight: 600,
           textShadow: '0 2px 12px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)',
-          transition: 'transform 220ms cubic-bezier(.2,.8,.2,1)',
+          transition: 'transform 420ms cubic-bezier(.25,.7,.25,1)',
           willChange: 'transform',
           paddingTop: '50vh',
           paddingBottom: '80vh',

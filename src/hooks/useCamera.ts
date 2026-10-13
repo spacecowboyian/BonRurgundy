@@ -52,6 +52,7 @@ export function useCamera(enabled: boolean): UseCameraResult {
   const [error, setError] = useState<string | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [fps, setFpsState] = useState<number>(() => Number(localStorage.getItem(LS_FPS)) || 30)
+  const [reopen, setReopen] = useState(0)
 
   const setFps = useCallback((f: number) => {
     localStorage.setItem(LS_FPS, String(f))
@@ -158,7 +159,14 @@ export function useCamera(enabled: boolean): UseCameraResult {
         read()
         // Some UVC devices renegotiate shortly after start; re-read once.
         setTimeout(() => !cancelled && read(), 1500)
-        track.addEventListener('ended', () => !cancelled && setStatus('idle'))
+        track.addEventListener('ended', () => {
+          if (cancelled) return
+          // iOS ends the camera when another capture starts; try once to get it back.
+          setStatus('idle')
+          setTimeout(() => {
+            if (!cancelled && streamRef.current === s) setReopen((n) => n + 1)
+          }, 800)
+        })
       } catch (e) {
         if (!cancelled) {
           setStatus('error')
@@ -169,7 +177,7 @@ export function useCamera(enabled: boolean): UseCameraResult {
     return () => {
       cancelled = true
     }
-  }, [enabled, deviceId, fps])
+  }, [enabled, deviceId, fps, reopen])
 
   useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), [])
 
