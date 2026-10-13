@@ -1,10 +1,10 @@
 import readme from '../../README.md?raw'
 import { tidyScript } from '../lib/tidy'
 
-/** The sample script is the "Prompter first, monitor second" section of the README, tidied for reading aloud. */
+/** The sample script is the README's opening section (under the title, before the first ## heading), tidied for reading aloud. */
 function section(md: string, heading: string): string {
   const lines = md.replace(/\r\n?/g, '\n').split('\n')
-  const start = lines.findIndex((l) => l.trim().toLowerCase() === `## ${heading}`.toLowerCase())
+  const start = lines.findIndex((l) => l.trim().toLowerCase() === `${heading}`.toLowerCase())
   if (start < 0) return md
   let end = lines.length
   for (let i = start + 1; i < lines.length; i++) {
@@ -16,4 +16,4 @@ function section(md: string, heading: string): string {
   return lines.slice(start + 1, end).join('\n')
 }
 
-export const SAMPLE_SCRIPT = tidyScript(section(readme, 'Prompter first, monitor second'))
+export const SAMPLE_SCRIPT = tidyScript(section(readme, '# BonRurgundy'))
