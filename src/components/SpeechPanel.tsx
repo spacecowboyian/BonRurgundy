@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function SpeechPanel({ speech, aligner, hidden }: Props) {
-  const { status, error, finals, interim, log, lastGapMs, start, stop, clear, mics, micId, setMicId } = speech
+  const { status, error, finals, interim, log, lastGapMs, start, stop, clear } = speech
   const logRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight })
@@ -24,7 +24,7 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
       style={{
         position: 'fixed',
         right: 12,
-        top: 60,
+        top: 'calc(60px + var(--sat))',
         width: 360,
         maxHeight: 'calc(100vh - 140px)',
         display: 'flex',
@@ -43,7 +43,7 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
     >
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <span style={{ width: 10, height: 10, borderRadius: 5, background: dot, boxShadow: listening ? `0 0 8px ${dot}` : undefined }} />
-        <strong>Speech</strong>
+        <strong>Transcript (debug, T)</strong>
         <span style={{ color: 'var(--muted)' }}>{status}</span>
         <span style={{ flex: 1 }} />
         <button onClick={listening ? stop : start} style={{ fontWeight: 600 }} disabled={status === 'unsupported'}>
@@ -52,10 +52,6 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
         <button onClick={clear}>Clear</button>
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <input type="checkbox" checked={aligner.enabled} onChange={(e) => aligner.setEnabled(e.target.checked)} />
-          voice follow
-        </label>
         <span
           style={{
             padding: '2px 8px',
@@ -76,15 +72,6 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
           tok {aligner.state.cursor} · miss {aligner.state.unmatched}
         </span>
       </div>
-      <label style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
-        <span style={{ color: 'var(--muted)' }}>wake word(s)</span>
-        <input
-          value={aligner.wakeText}
-          onChange={(e) => aligner.setWakeText(e.target.value)}
-          placeholder="bob"
-          style={{ flex: 1, font: 'inherit', color: 'var(--fg)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '3px 6px' }}
-        />
-      </label>
       <div style={{ color: 'var(--muted)', fontSize: 12 }}>
         say <b>{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back</b> / <b>… forward three</b> / <b>… hold</b> / <b>… go</b>
         {aligner.lastCommand && (
@@ -94,14 +81,6 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
           </span>
         )}
       </div>
-      <select value={micId ?? ''} onChange={(e) => setMicId(e.target.value)} disabled={listening}>
-        {mics.length === 0 && <option value="">No mics</option>}
-        {mics.map((d) => (
-          <option key={d.deviceId} value={d.deviceId}>
-            {d.label || `Mic ${d.deviceId.slice(0, 6)}`}
-          </option>
-        ))}
-      </select>
       {status === 'unsupported' && <span style={{ color: 'var(--warn)' }}>Web Speech API not available. Use Chrome.</span>}
       {error && <span style={{ color: 'var(--warn)' }}>{error}</span>}
       <div style={{ display: 'flex', gap: 12, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>

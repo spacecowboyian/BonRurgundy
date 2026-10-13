@@ -39,9 +39,10 @@ Goal: a Chrome tab on the Mac showing the Pocket 3 feed full-screen with a scrip
 - **Test:** full read-through with an ad-lib in the middle.
 - **Result:** riff freeze landed in Phase 4. Commands: `prompter back [N]`, `prompter forward [N]` (N in lines, from real rendered line boundaries), `prompter hold`, `prompter go`. Ian prioritised back/forward over hold/go after a live test of the aligner.
 
-## Phase 6: Polish for real use
+## Phase 6: Polish for real use (IN PROGRESS)
 - Font size, line position, margins persisted. Mirror mode. Hide chrome in fullscreen.
 - Optional: MediaRecorder backup of the stream.
+- **Done 2026-10-13:** responsive HUD for phone landscape/portrait (vmin font unit, safe-area insets, settings sheet), script import by paste/file/drop with markdown tidy, auto-listen on load behind a tap-to-start gate, transcript panel demoted to a T-key debug view, `dev:https` for LAN phone testing.
 
 ## Risks
 - Web Speech API accuracy/latency with a USB mic. Fallback: Deepgram streaming or whisper wasm.

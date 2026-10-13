@@ -1,4 +1,6 @@
+import { useRef, useState } from 'react'
 import { SAMPLE_SCRIPT } from '../data/sampleScript'
+import { tidyScript } from '../lib/tidy'
 
 interface Props {
   text: string
@@ -7,51 +9,61 @@ interface Props {
 }
 
 export function ScriptEditor({ text, onChange, onClose }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
   const words = text.trim() ? text.trim().split(/\s+/).length : 0
   const minutes = words / 150
+
+  const loadFile = async (f: File | undefined) => {
+    if (!f) return
+    const raw = await f.text()
+    onChange(tidyScript(raw))
+  }
+  const paste = async () => {
+    try {
+      const t = await navigator.clipboard.readText()
+      if (t) onChange(tidyScript(t))
+    } catch {
+      /* clipboard denied; user can paste into the textarea */
+    }
+  }
+
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.85)',
-        backdropFilter: 'blur(10px)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: 24,
-        gap: 12,
-        zIndex: 20,
+      className={`editor${dragging ? ' dragging' : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setDragging(true)
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setDragging(false)
+        loadFile(e.dataTransfer.files[0])
       }}
     >
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      <div className="toolbar">
         <strong style={{ fontSize: 16 }}>Script</strong>
-        <span style={{ color: 'var(--muted)', fontSize: 13 }}>
-          {words} words · ~{minutes.toFixed(1)} min at 150 wpm
+        <span style={{ color: 'var(--muted)' }}>
+          {words} words · ~{minutes.toFixed(1)} min
         </span>
         <span style={{ flex: 1 }} />
-        <button onClick={() => onChange(SAMPLE_SCRIPT)}>Load sample</button>
+        <button onClick={() => fileRef.current?.click()}>Open file…</button>
+        <input ref={fileRef} type="file" accept=".txt,.md,.markdown,.fountain,text/plain,text/markdown" hidden onChange={(e) => loadFile(e.target.files?.[0])} />
+        <button onClick={paste}>Paste</button>
+        <button onClick={() => onChange(tidyScript(text))} title="Strip markdown, speaker labels, stage directions">Tidy</button>
+        <button onClick={() => onChange(SAMPLE_SCRIPT)}>Sample</button>
         <button onClick={() => onChange('')}>Clear</button>
-        <button onClick={onClose} style={{ background: 'var(--accent)', color: '#000', fontWeight: 600 }}>
-          Done (Esc)
+        <button className="primary" onClick={onClose} disabled={!text.trim()}>
+          Done
         </button>
       </div>
       <textarea
         autoFocus
         value={text}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Paste your script here. Blank lines separate paragraphs."
+        placeholder="Paste your script here, open a .txt/.md file, or drop one on this window. Blank lines separate paragraphs."
         spellCheck={false}
-        style={{
-          flex: 1,
-          font: '18px/1.5 ui-monospace, Menlo, monospace',
-          color: 'var(--fg)',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: 8,
-          padding: 16,
-          resize: 'none',
-          outline: 'none',
-        }}
       />
     </div>
   )

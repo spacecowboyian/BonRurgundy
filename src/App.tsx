@@ -1,42 +1,72 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCamera } from './hooks/useCamera'
 import { usePrompterControl } from './hooks/usePrompterControl'
 import { useSpeech } from './hooks/useSpeech'
 import { useAligner } from './hooks/useAligner'
 import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
-import { SAMPLE_SCRIPT } from './data/sampleScript'
 import { VideoLayer } from './components/VideoLayer'
-import { CameraHud } from './components/CameraHud'
+import { Hud } from './components/Hud'
+import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
 import { SpeechPanel } from './components/SpeechPanel'
-import { DEFAULT_PREFS, Prompter, type PrompterPrefs } from './components/Prompter'
+import { DEFAULT_PREFS, Prompter, fontPx, type PrompterPrefs } from './components/Prompter'
 
 export default function App() {
   const cam = useCamera()
-  const [scriptText, setScriptText] = useLocalState('osmo-prompter.script', SAMPLE_SCRIPT)
-  const [prefs, setPrefs] = useLocalState<PrompterPrefs>('osmo-prompter.prefs', DEFAULT_PREFS)
-  const [editing, setEditing] = useState(() => !scriptText.trim())
-  const [hudHidden, setHudHidden] = useState(false)
-  const [speechHidden, setSpeechHidden] = useState(false)
   const speech = useSpeech()
+  const [scriptText, setScriptText] = useLocalState('osmo-prompter.script', '')
+  const [prefs, setPrefsRaw] = useLocalState<PrompterPrefs>('osmo-prompter.prefs2', DEFAULT_PREFS)
+  // Older builds stored font size in px; anything over 20 can't be a vh value.
+  useEffect(() => {
+    if (prefs.fontSize > 20) setPrefsRaw((p) => ({ ...p, fontSize: DEFAULT_PREFS.fontSize }))
+  }, [prefs.fontSize, setPrefsRaw])
+  const setPrefs = setPrefsRaw
+  const [autoListen, setAutoListen] = useLocalState('osmo-prompter.autoListen', true)
+  const [editing, setEditing] = useState(() => !scriptText.trim())
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [hudHidden, setHudHidden] = useState(false)
+  const [debugOpen, setDebugOpen] = useState(false)
+  // Browsers need a user gesture before the mic can start; show a tap target.
+  const [needsTap, setNeedsTap] = useState(() => autoListen && !!scriptText.trim())
 
   const script = useMemo(() => parseScript(scriptText), [scriptText])
   const ctl = usePrompterControl(script.words.length)
   const aligner = useAligner(script, speech, ctl)
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen()
-    else document.documentElement.requestFullscreen()
-  }
+    else document.documentElement.requestFullscreen?.().catch(() => {})
+  }, [])
+
+  const begin = useCallback(() => {
+    setNeedsTap(false)
+    if (autoListen && speech.status !== 'listening') speech.start()
+  }, [autoListen, speech])
+
+  const closeEditor = useCallback(() => {
+    if (!scriptText.trim()) return
+    setEditing(false)
+    ctl.reset()
+    // Closing the editor is itself a gesture, so we can start right away.
+    if (autoListen && speech.status !== 'listening') speech.start()
+  }, [scriptText, ctl, autoListen, speech])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (editing) {
-        if (e.key === 'Escape') setEditing(false)
+        if (e.key === 'Escape') closeEditor()
+        return
+      }
+      if (settingsOpen) {
+        if (e.key === 'Escape') setSettingsOpen(false)
         return
       }
       if (e.target instanceof HTMLSelectElement || e.target instanceof HTMLInputElement) return
+      if (needsTap) {
+        begin()
+        return
+      }
       switch (e.key) {
         case ' ':
           e.preventDefault()
@@ -61,16 +91,17 @@ export default function App() {
           ctl.setWpm((w) => w - 10)
           break
         case ']':
-          setPrefs((p) => ({ ...p, fontSize: Math.min(120, p.fontSize + 4) }))
+          setPrefs((p) => ({ ...p, fontSize: Math.min(16, p.fontSize + 0.5) }))
           break
         case '[':
-          setPrefs((p) => ({ ...p, fontSize: Math.max(24, p.fontSize - 4) }))
+          setPrefs((p) => ({ ...p, fontSize: Math.max(3, p.fontSize - 0.5) }))
           break
         case 'Home':
           ctl.reset()
           break
         case 'e':
         case 'E':
+          e.preventDefault()
           setEditing(true)
           break
         case 'h':
@@ -91,20 +122,24 @@ export default function App() {
           break
         case 't':
         case 'T':
-          setSpeechHidden((v) => !v)
+          setDebugOpen((v) => !v)
+          break
+        case ',':
+          setSettingsOpen((v) => !v)
           break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing, ctl, setPrefs, speech])
+  }, [editing, settingsOpen, needsTap, begin, closeEditor, ctl, setPrefs, speech, toggleFullscreen])
 
   // Wheel / trackpad / touch scrolling on the text. Pixels are converted to
   // words using the current font size so the feel stays constant across sizes.
   const scrollAcc = useRef(0)
   const touchY = useRef<number | null>(null)
   useEffect(() => {
-    const pxPerWord = () => (prefs.fontSize * 1.35) / 7 // ~7 words per line
+    const blocked = () => editing || settingsOpen || needsTap
+    const pxPerWord = () => (fontPx(prefs) * 1.35) / 7 // ~7 words per line
     const applyDelta = (dy: number) => {
       scrollAcc.current += dy
       const words = Math.trunc(scrollAcc.current / pxPerWord())
@@ -114,17 +149,18 @@ export default function App() {
       }
     }
     const onWheel = (e: WheelEvent) => {
-      if (editing) return
-      if ((e.target as HTMLElement).closest?.('input,select,button')) return
+      if (blocked()) return
+      if ((e.target as HTMLElement).closest?.('input,select,button,.bar,.sheet')) return
       e.preventDefault()
       applyDelta(e.deltaY)
     }
     const onTouchStart = (e: TouchEvent) => {
-      if (editing) return
+      if (blocked()) return
+      if ((e.target as HTMLElement).closest?.('.bar,.sheet')) return
       touchY.current = e.touches[0].clientY
     }
     const onTouchMove = (e: TouchEvent) => {
-      if (editing || touchY.current == null) return
+      if (blocked() || touchY.current == null) return
       const y = e.touches[0].clientY
       applyDelta(touchY.current - y) // swipe up = advance
       touchY.current = y
@@ -142,25 +178,46 @@ export default function App() {
       window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('touchend', onTouchEnd)
     }
-  }, [editing, ctl, prefs.fontSize])
+  }, [editing, settingsOpen, needsTap, ctl, prefs])
+
+  const voiceStatus = speech.status === 'listening' && aligner.enabled ? (aligner.held ? 'held' : aligner.state.status) : null
 
   return (
     <>
       <VideoLayer stream={cam.stream} mirror={prefs.mirror} />
-      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={speech.status === 'listening' && aligner.enabled ? (aligner.held ? 'held' : aligner.state.status) : null}
-        onLines={ctl.setLines} />
-      <CameraHud
+      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={ctl.setLines} />
+      <Hud
         cam={cam}
-        prefs={prefs}
-        setPrefs={setPrefs}
+        speech={speech}
+        aligner={aligner}
         ctl={ctl}
         wordCount={script.words.length}
+        hidden={hudHidden || needsTap}
         onEdit={() => setEditing(true)}
+        onSettings={() => setSettingsOpen(true)}
         onFullscreen={toggleFullscreen}
-        hidden={hudHidden}
       />
-      <SpeechPanel speech={speech} aligner={aligner} hidden={hudHidden || speechHidden} />
-      {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={() => setEditing(false)} />}
+      {debugOpen && <SpeechPanel speech={speech} aligner={aligner} hidden={false} />}
+      {settingsOpen && (
+        <SettingsSheet
+          cam={cam}
+          speech={speech}
+          aligner={aligner}
+          ctl={ctl}
+          prefs={prefs}
+          setPrefs={setPrefs}
+          autoListen={autoListen}
+          setAutoListen={setAutoListen}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
+      {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={closeEditor} />}
+      {needsTap && !editing && (
+        <div className="tap" onClick={begin}>
+          <strong>Tap to start</strong>
+          <span>{autoListen ? 'Starts the mic and follows your voice' : 'Ready'}</span>
+        </div>
+      )}
     </>
   )
 }
