@@ -42,7 +42,8 @@ function pickDefault(devices: MediaDeviceInfo[]): string | null {
   return front?.deviceId ?? devices[0]?.deviceId ?? null
 }
 
-export function useCamera(): UseCameraResult {
+/** `enabled` false: no permission prompt, no stream, no enumeration. Camera is opt-in. */
+export function useCamera(enabled: boolean): UseCameraResult {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [deviceId, setDeviceIdState] = useState<string | null>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
@@ -80,6 +81,12 @@ export function useCamera(): UseCameraResult {
   // Initial permission + enumeration. Labels are empty until permission is granted,
   // so we open a throwaway stream first.
   useEffect(() => {
+    if (!enabled) {
+      stop()
+      setDevices([])
+      setError(null)
+      return
+    }
     let cancelled = false
     ;(async () => {
       try {
@@ -99,11 +106,11 @@ export function useCamera(): UseCameraResult {
       cancelled = true
       navigator.mediaDevices.removeEventListener('devicechange', refreshDevices)
     }
-  }, [refreshDevices])
+  }, [enabled, refreshDevices, stop])
 
   // Open the chosen device, asking for 4K.
   useEffect(() => {
-    if (!deviceId) return
+    if (!enabled || !deviceId) return
     let cancelled = false
     streamRef.current?.getTracks().forEach((t) => t.stop())
     setStatus('requesting')
@@ -162,7 +169,7 @@ export function useCamera(): UseCameraResult {
     return () => {
       cancelled = true
     }
-  }, [deviceId, fps])
+  }, [enabled, deviceId, fps])
 
   useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), [])
 

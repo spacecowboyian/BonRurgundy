@@ -8,6 +8,8 @@ import { fontPx, type PrompterPrefs } from './Prompter'
 
 interface Props {
   cam: UseCameraResult
+  cameraOn: boolean
+  setCameraOn: (v: boolean) => void
   relay: RelayView
   speech: UseSpeechResult
   aligner: AlignerView
@@ -19,7 +21,7 @@ interface Props {
   onClose: () => void
 }
 
-export function SettingsSheet({ cam, relay, speech, aligner, ctl, prefs, setPrefs, autoListen, setAutoListen, onClose }: Props) {
+export function SettingsSheet({ cam, cameraOn, setCameraOn, relay, speech, aligner, ctl, prefs, setPrefs, autoListen, setAutoListen, onClose }: Props) {
   const capsText = cam.info?.caps
     ? `device offers up to ${cam.info.caps.width?.max ?? '?'}×${cam.info.caps.height?.max ?? '?'}, ${cam.info.caps.frameRate?.max ?? '?'} fps`
     : null
@@ -35,6 +37,8 @@ export function SettingsSheet({ cam, relay, speech, aligner, ctl, prefs, setPref
         </div>
 
         <h3>Camera{relay.mode === 'receive' ? ' (showing the Mac relay)' : ''}</h3>
+        <label className="toggle"><input type="checkbox" checked={cameraOn} onChange={(e) => setCameraOn(e.target.checked)} /> Show a camera feed behind the words</label>
+        {cameraOn && (<>
         <div className="row">
           <label>Source</label>
           <select value={cam.deviceId ?? ''} onChange={(e) => cam.setDeviceId(e.target.value)}>
@@ -55,6 +59,7 @@ export function SettingsSheet({ cam, relay, speech, aligner, ctl, prefs, setPref
             {cam.error ?? (fpsMismatch ? `camera negotiated ${cam.info!.frameRate!.toFixed(0)} fps, not ${cam.fps}` : capsText)}
           </div>
         )}
+        </>)}
 
         <RelayPanel relay={relay} canShare={cam.status === 'live' && !!cam.stream} onShare={() => cam.stream && relay.share(cam.stream)} />
 

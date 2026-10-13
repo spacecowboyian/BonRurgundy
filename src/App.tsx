@@ -15,7 +15,8 @@ import { SpeechPanel } from './components/SpeechPanel'
 import { DEFAULT_PREFS, Prompter, fontPx, type PrompterPrefs } from './components/Prompter'
 
 export default function App() {
-  const cam = useCamera()
+  const [cameraOn, setCameraOn] = useLocalState('osmo-prompter.cameraOn', false)
+  const cam = useCamera(cameraOn)
   const speech = useSpeech()
   const relay = useRelay()
   const [scriptText, setScriptText] = useLocalState('osmo-prompter.script', '')
@@ -269,6 +270,8 @@ export default function App() {
       {settingsOpen && (
         <SettingsSheet
           cam={cam}
+          cameraOn={cameraOn}
+          setCameraOn={setCameraOn}
           relay={relay}
           speech={speech}
           aligner={aligner}
