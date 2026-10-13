@@ -39,20 +39,76 @@ interface Props {
 export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([])
-  const translateRef = useRef(0)
 
   const clampedCursor = Math.max(0, Math.min(cursor, script.words.length - 1))
 
-  useLayoutEffect(() => {
-    const el = wordRefs.current[clampedCursor]
+  // Continuous motion: a damped glide toward the target word, plus forward drift
+  // between voice updates at the measured speaking rate so the text keeps moving
+  // like a real prompter instead of ticking word by word.
+  const anim = useRef({
+    y: 0, // current translateY
+    cursor: 0, // last cursor we saw
+    changedAt: 0, // when it changed
+    rate: 0, // words per second, EMA
+    raf: 0,
+  })
+  const predict = status === 'tracking'
+
+  // Record cursor changes and update the rate estimate.
+  useEffect(() => {
+    const a = anim.current
+    const now = performance.now()
+    const delta = clampedCursor - a.cursor
+    const dt = (now - a.changedAt) / 1000
+    if (a.changedAt && delta > 0 && delta <= 6 && dt > 0.05 && dt < 3) {
+      const inst = delta / dt
+      a.rate = a.rate ? a.rate * 0.7 + inst * 0.3 : inst
+    } else if (delta <= 0 || delta > 6) {
+      a.rate = 0 // manual move, re-read or jump: stop drifting until we re-measure
+    }
+    a.cursor = clampedCursor
+    a.changedAt = now
+  }, [clampedCursor])
+
+  // Y of the reading point for a fractional cursor, interpolating between words.
+  const targetYFor = (c: number) => {
+    const i = Math.floor(c)
+    const f = c - i
+    const a = wordRefs.current[Math.min(i, script.words.length - 1)]
+    const b = wordRefs.current[Math.min(i + 1, script.words.length - 1)]
+    if (!a) return 0
+    const ya = a.offsetTop + a.offsetHeight / 2
+    const yb = b ? b.offsetTop + b.offsetHeight / 2 : ya
+    return ya + (yb - ya) * f
+  }
+
+  useEffect(() => {
+    const a = anim.current
     const box = scrollRef.current
-    if (!el || !box) return
-    const targetY = window.innerHeight * prefs.lineAt
-    // offsetTop is relative to the scroll container (position: relative).
-    const y = el.offsetTop + el.offsetHeight / 2
-    translateRef.current = targetY - y
-    box.style.transform = `translateY(${translateRef.current}px)`
-  }, [clampedCursor, prefs.lineAt, prefs.fontSize, prefs.width, script])
+    if (!box) return
+    let last = performance.now()
+    const tick = (now: number) => {
+      const dt = Math.min(0.1, (now - last) / 1000)
+      last = now
+      // Where should the reading line be? Drift ahead of the last confirmed word
+      // at the measured rate, capped so a pause doesn't run away.
+      let c = a.cursor
+      if (predict && a.rate > 0) {
+        const ahead = Math.min(2.5, a.rate * ((now - a.changedAt) / 1000))
+        c = Math.min(script.words.length - 1, a.cursor + ahead)
+      }
+      const target = window.innerHeight * prefs.lineAt - targetYFor(c)
+      // Critically-damped-ish glide: time constant ~180ms.
+      const k = 1 - Math.exp(-dt / 0.18)
+      a.y += (target - a.y) * k
+      if (Math.abs(target - a.y) < 0.05) a.y = target
+      box.style.transform = `translate3d(0, ${a.y}px, 0)`
+      a.raf = requestAnimationFrame(tick)
+    }
+    a.raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(a.raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [predict, prefs.lineAt, prefs.fontSize, prefs.width, script])
 
   // Real line boundaries from the DOM, for "back N lines" style navigation.
   useLayoutEffect(() => {
@@ -125,7 +181,6 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
           lineHeight: 1.2,
           fontWeight: 600,
           textShadow: '0 2px 12px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)',
-          transition: 'transform 220ms cubic-bezier(.2,.8,.2,1)',
           willChange: 'transform',
           paddingTop: '50vh',
           paddingBottom: '80vh',
