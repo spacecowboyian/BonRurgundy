@@ -81,12 +81,12 @@ export function SpeechPanel({ speech, aligner, hidden }: Props) {
         <input
           value={aligner.wakeText}
           onChange={(e) => aligner.setWakeText(e.target.value)}
-          placeholder="cue, q, queue"
+          placeholder="bob"
           style={{ flex: 1, font: 'inherit', color: 'var(--fg)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '3px 6px' }}
         />
       </label>
       <div style={{ color: 'var(--muted)', fontSize: 12 }}>
-        say <b>{aligner.wakeText.split(/[,\s]+/)[0] || 'cue'} back</b> / <b>… forward three</b> / <b>… hold</b> / <b>… go</b>
+        say <b>{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back</b> / <b>… forward three</b> / <b>… hold</b> / <b>… go</b>
         {aligner.lastCommand && (
           <span style={{ color: 'var(--accent)', marginLeft: 8 }}>
             ← {aligner.lastCommand.cmd.kind}

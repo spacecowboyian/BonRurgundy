@@ -7,10 +7,10 @@
  *   <wake> go | resume | continue
  * N is one..twenty (digits arrive already expanded to words by normalize).
  * The wake word is a set of aliases because the recognizer spells short words
- * inconsistently ("cue" / "q" / "queue").
+ * inconsistently; "bob" is one syllable, rare in scripts and transcribes reliably.
  */
 
-export const DEFAULT_WAKE = ['cue', 'q', 'queue']
+export const DEFAULT_WAKE = ['bob']
 export const WAKE = DEFAULT_WAKE[0]
 
 /** Parse a user-entered wake list: "cue, q, queue" -> normalized tokens. */
