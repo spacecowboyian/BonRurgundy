@@ -1,34 +1,59 @@
 # BonRurgundy
 
-Voice-tracked teleprompter for the phone and the Mac, with an optional DJI Osmo Pocket 3 monitor feed. Say "bon back" and it goes back.
+A voice-tracked teleprompter that runs in the browser. Paste a script, tap the mic, and the text follows you as you read. Flub a line and say **"bon back"**. Works on a phone, a Mac, or anything with Chrome or Safari, and can optionally show a camera feed (your phone's, or a DJI Osmo Pocket 3 relayed from a Mac) behind the words.
 
-Live camera feed (Pocket 3 over USB in webcam/UVC mode) full-screen in the background, script overlaid on top, scrolling as you speak. Voice-tracked alignment keeps the reading line on your words; riffing off-script freezes the prompter; matching words again resumes it.
+Live: https://spacecowboyian.github.io/bonrurgundy/
 
-## Stack
+## How it works
 
-- React + Vite + TypeScript
-- Chrome on macOS (Pocket 3 over a data USB-C cable, **Webcam** mode)
-- No backend for v1. Web Speech API for speech-to-text to start.
-
-## Run
-
-```bash
-npm install
-npm run dev          # http://localhost:5173 on the Mac
-npm run dev:https    # self-signed https, for a phone on the same Wi-Fi
-```
-
-On a phone open `https://<mac-lan-ip>:5173`, accept the certificate warning once. Mic and camera need a secure context, so plain http only works on localhost.
+- Speech-to-text comes from the browser's Web Speech API (Chrome and Safari). Audio goes to the browser vendor's recognizer.
+- A small aligner matches the recognized words against the script with fuzzy tolerance, number expansion ("54" = "fifty four"), and letter/digit splitting ("AW11" = "aw eleven"). Six unmatched words in a row freezes the prompter until you're back on script.
+- Nothing is uploaded. The script and your settings live in the browser's local storage on that device.
 
 ## Use
 
-1. Paste or open a script (`.txt` / `.md`; markdown headings, speaker labels and stage directions are stripped). Tap Done.
-2. Tap the mic icon (bottom left) to follow your voice, or the play button to scroll at a fixed speed.
-3. Say **bon back** / **bon back two** / **bon forward three** to jump by lines, **bon hold** / **bon go** to freeze and resume. Swipe or scroll the text to move it by hand.
-4. Settings (gear): camera, frame rate, mic, wake word, text size, reading line, width, mirror.
+1. Open the app. The script screen appears if there's no script yet. Paste, open a `.txt`/`.md` file, or drop one on the window. **Tidy** strips markdown headings, speaker labels and stage directions. Tap **Done**.
+2. Tap the **mic** (bottom left) to follow your voice, or **play** to scroll at a fixed speed. The two are exclusive.
+3. Tap the text to show the top bar (word count, script, settings). Showing the bar pauses the mic; tapping the text again hides it and resumes.
+4. Swipe or scroll the text to move it by hand.
 
-Keys on a keyboard: Space fixed-speed scroll, arrows move a line, V listen, E script, H hide bars, F fullscreen, M mirror, `,` settings, T transcript debug.
+### Transport (bottom left)
+Play/pause · go to start · previous paragraph · next paragraph · go to end · mic.
 
-## Status
+### Voice commands
+All start with the wake word, **bon** by default (change it in Settings; comma-separate aliases if it mishears).
 
-Proof of concept. See [PLAN.md](PLAN.md) for the build order and the project brain (`projects/osmo-prompter/` in Brains) for spec, architecture, and hardware findings.
+| Say | Does |
+| --- | --- |
+| bon back / bon back two | up one / two lines |
+| bon forward three | down three lines |
+| bon next / bon previous | next / previous paragraph |
+| bon back two paragraphs | two paragraphs up |
+| bon start / bon end | top / bottom of the script |
+| bon play / bon pause | fixed-speed scroll on / off |
+| bon hold / bon go | freeze voice-follow / resume |
+
+### Keyboard
+Space play/pause · ↑↓ line · PageUp/PageDown paragraph · Home/End · V mic · E script · `,` settings · F fullscreen · M mirror · `[` `]` text size · `+` `-` play speed · T transcript debug.
+
+### Settings (gear)
+- **Camera:** off by default. Turn on to show a feed behind the words (front camera on a phone, Pocket 3 on a Mac), pick source and frame rate.
+- **Phone monitor:** plug the Pocket 3 into a Mac, tap *Share this camera to a phone*, scan the QR on the phone. Video is peer-to-peer on your Wi‑Fi. iPhones can't take USB cameras directly, which is why this exists.
+- **Voice:** mic, wake word, follow-my-voice toggle.
+- **Text:** size, reading-line position, width, mirror (for beam-splitter glass).
+- **Play speed** for the fixed-speed mode.
+
+## Develop
+
+```bash
+npm install
+npm run dev          # http://localhost:5173
+npm run dev:https    # self-signed https, so a phone on the same Wi‑Fi can use the mic
+npm test
+```
+
+React + Vite + TypeScript, no backend. Pushes to `main` deploy to GitHub Pages via Actions. Donation links live in `src/config.ts`.
+
+## History
+
+Built 2026-10-13 as a proof of concept for reading Church of Combustion scripts to a DJI Osmo Pocket 3. See [PLAN.md](PLAN.md) for the build log and the `projects/osmo-prompter/` brain for spec, decisions and hardware findings.

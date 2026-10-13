@@ -1,50 +1,46 @@
-# PoC Plan of Attack
+# Build log
 
-Goal: a Chrome tab on the Mac showing the Pocket 3 feed full-screen with a script overlaid that scrolls as Ian reads it aloud. Each phase ends with something testable against the real camera.
+The original plan was six phases, each gated on a test against the real DJI Osmo Pocket 3. All six landed on 2026-10-13. What follows is what each phase set out to do and what actually shipped.
 
-## Phase 0: Hardware baseline (30 min, no code)
-- Check Pocket 3 firmware (Settings > Device Info); 4K UVC streaming needs later firmware.
-- Plug in via data USB-C, choose **Webcam**. Confirm it appears in `chrome://settings/content/camera` and as an audio input.
-- Do not run OBS/Photo Booth at the same time (mode lock).
+## Phase 0: Hardware baseline
+- Pocket 3 over a data USB-C cable in **Webcam** mode shows up as a standard UVC camera and mic in Chrome. Don't run OBS or Photo Booth at the same time.
+- Firmware version still not recorded (Settings > Device Info on the camera).
 
-## Phase 1: Scaffold + camera feed (DONE)
-- `npm create vite@latest` with React + TS. Add Vitest.
-- `useCamera` hook: `enumerateDevices`, device picker, `getUserMedia` with `{ width: { ideal: 3840 }, height: { ideal: 2160 } }`.
-- Full-screen `<video>` with a badge showing `track.getSettings()` (actual width/height/fps).
-- **Test:** 4K badge appears for Pocket 3? Press record on the camera, exit webcam mode, check card clip resolution. Log result in `hardware-findings` (this answers the open 4K question).
-- **Result 2026-10-13:** done. Requesting 3840x2160 puts the camera in 4K30; requesting exact 24 fps puts it in 4K24 (confirmed on the camera screen). Host UVC request drives camera mode. Card clip resolution at 4K24 still to be eyeballed.
+## Phase 1: Scaffold + camera feed (done)
+- Vite + React + TypeScript, Vitest.
+- `useCamera`: device picker, `getUserMedia` asking for 3840×2160 and an exact frame rate (24/25/30/50/60), reports the negotiated settings and advertised capabilities.
+- **Finding:** the host's UVC request drives the camera's mode. Asking for 4K at 24 fps put the Pocket 3 in 4K24 on its own screen. Card clip resolution in that mode still to be eyeballed.
 
-## Phase 2: Script + manual prompter (DONE 2026-10-13)
-- Script editor route: textarea, saved to localStorage.
-- Prompter overlay: large text, gradient fades top/bottom, reading line at top third, passed words dimmed.
-- Manual controls: space = pause/resume, arrows = nudge, +/- = speed, `m` = mirror toggle, `f` = fullscreen.
-- **Test:** usable as a dumb teleprompter over the live feed.
-- **Result:** built. Seeded with the Reverend's lines from the CoC "Resurrection Protocol" script. Speed mode is wpm-driven; aligner will replace it in Phase 4.
+## Phase 2: Script + manual prompter (done)
+- Script editor with localStorage, paste/file/drag-drop import, markdown tidy.
+- Prompter overlay: reading line at the top third, fades, read words dimmed, no current-word highlight.
+- Fixed-speed play (wpm), wheel/trackpad/touch scrolling, keyboard nudges.
 
-## Phase 3: Speech-to-text (DONE 2026-10-13: Web Speech API, 95-96% confidence on Pocket 3 mic)
-- `useSpeech` hook on Web Speech API (`webkitSpeechRecognition`, `continuous`, `interimResults`). Select Pocket 3 mic as input.
-- Debug panel: live interim and final transcript, latency.
-- **Test:** read a 2-minute script, check word accuracy and lag. Decision gate: stay on Web Speech or move to Deepgram/Whisper.
+## Phase 3: Speech-to-text (done)
+- Web Speech API, continuous with interim results, auto-restart. Decision gate passed: 95–96% confidence on the Pocket 3 mic, "AW11" and "MR2" correct. Deepgram/Whisper stay as fallbacks only.
 
-## Phase 4: Aligner (pure TS, unit tested) (DONE 2026-10-13)
-- Tokenize + normalize script (lowercase, strip punctuation, numbers to words).
-- Input: last 3 to 5 recognized words. Search window: cursor to cursor+40. Per-token edit-distance tolerance.
-- Output: new cursor + state (`tracking | riffing | held`). Never jump backward unless strong match behind.
-- Interim results drive smooth scroll; finals confirm.
-- Tests: exact read, skipped sentence, re-read sentence, homophones, filler words.
+## Phase 4: Aligner (done, 26 unit tests across normalize/aligner/commands/tidy)
+- Normalize both sides: lowercase, strip punctuation, digits to words, letter/digit split.
+- Fuzzy forward match in a 40-token window with a distance penalty; stop words only confirm a run already in progress; bigram lookbehind for re-reads; six misses = riffing, cursor frozen.
+- Finals fold into a checkpoint; each interim hypothesis is re-applied on top so motion is continuous; manual moves resync.
 
-## Phase 5: Riff + voice commands (DONE 2026-10-13)
-- ~6 consecutive unmatched words = `riffing`, freeze scroll. Match resumes = resync.
-- Keyword phrases (`prompter hold` / `prompter go`) detected and filtered before alignment. Confirm no collision with natural speech.
-- **Test:** full read-through with an ad-lib in the middle.
-- **Result:** riff freeze landed in Phase 4. Commands: `prompter back [N]`, `prompter forward [N]` (N in lines, from real rendered line boundaries), `prompter hold`, `prompter go`. Ian prioritised back/forward over hold/go after a live test of the aligner.
+## Phase 5: Voice commands (done)
+- Wake word (default `bon`, configurable with aliases) plus back/forward N lines, next/previous paragraph, start/end, play/pause, hold/go. Fired from the interim as soon as they parse, deduped against the final, stripped before alignment.
+- Line boundaries come from the rendered DOM; paragraphs from blank lines.
 
-## Phase 6: Polish for real use (IN PROGRESS)
-- Font size, line position, margins persisted. Mirror mode. Hide chrome in fullscreen.
-- Optional: MediaRecorder backup of the stream.
-- **Done 2026-10-13:** responsive HUD for phone landscape/portrait (vmin font unit, safe-area insets, settings sheet), script import by paste/file/drop with markdown tidy, auto-listen on load behind a tap-to-start gate, transcript panel demoted to a T-key debug view, `dev:https` for LAN phone testing.
+## Phase 6: Polish (done)
+- Phone-first layout, landscape and portrait, font in vmin so rotation keeps size. Tape-deck transport and mic always visible; everything else hidden until you tap the text. Showing UI pauses the mic.
+- Camera opt-in, mic only on request. Donate button.
+- GitHub Pages deploy. Mac-to-phone WebRTC relay for the Pocket 3 feed (iPhone can't take USB cameras).
 
-## Risks
-- Web Speech API accuracy/latency with a USB mic. Fallback: Deepgram streaming or whisper wasm.
-- 4K UVC may not be exposed by Chrome or may not drive 4K card recording. Phase 1 settles this early.
-- Safari caps UVC modes; Chrome only for the PoC.
+## Tried and dropped
+- Auto-listen behind a tap-to-start overlay: replaced by the mic button.
+- Velocity-based "rolls at your pace" motion: felt leading, then bouncy, and fought manual drag. Back to a simple per-word 220 ms easing. Any future smoothing must not interfere with drag.
+- Yellow current-word highlight.
+
+## Still open
+- Confirm a card clip recorded in 4K24 webcam mode is actually 4K24.
+- Record Pocket 3 firmware version.
+- Keep markdown headings as visible landing points for paragraph navigation (currently stripped).
+- Public PeerJS signalling is a single point of failure for the relay; self-host or Supabase Realtime if it flakes.
+- Safari on iPhone: interim results are coarser than Chrome; tracking may feel steppier.
