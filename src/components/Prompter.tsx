@@ -42,44 +42,37 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
 
   const clampedCursor = Math.max(0, Math.min(cursor, script.words.length - 1))
 
-  // Continuous motion: a damped glide toward the target word, plus forward drift
-  // between voice updates at the measured speaking rate so the text keeps moving
-  // like a real prompter instead of ticking word by word.
+  // Velocity-based motion. The text rolls at your averaged speaking pace like
+  // a prompter on "play"; the recognizer only nudges the speed so the reading
+  // line stays locked. Stop talking and it glides to a halt.
   const anim = useRef({
-    y: 0, // current translateY
-    cursor: 0, // last cursor we saw
-    changedAt: 0, // when it changed
-    rate: 0, // words per second, EMA
+    y: 0, // current translateY (px)
+    v: 0, // current velocity (px/s, negative = text moving up)
+    cursor: 0,
+    changedAt: 0,
+    rate: 0, // words/sec, slow EMA = your pace
     raf: 0,
   })
   const predict = status === 'tracking'
 
-  // Record cursor changes and update the rate estimate.
   useEffect(() => {
     const a = anim.current
     const now = performance.now()
     const delta = clampedCursor - a.cursor
     const dt = (now - a.changedAt) / 1000
-    if (a.changedAt && delta > 0 && delta <= 6 && dt > 0.05 && dt < 3) {
+    if (a.changedAt && delta > 0 && delta <= 8 && dt > 0.05 && dt < 4) {
       const inst = delta / dt
-      a.rate = a.rate ? a.rate * 0.7 + inst * 0.3 : inst
-    } else if (delta <= 0 || delta > 6) {
-      a.rate = 0 // manual move, re-read or jump: stop drifting until we re-measure
+      a.rate = a.rate ? a.rate * 0.85 + inst * 0.15 : inst
+    } else if (delta < 0 || delta > 8) {
+      a.rate = 0 // jump, re-read or manual move: re-measure pace
     }
     a.cursor = clampedCursor
     a.changedAt = now
   }, [clampedCursor])
 
-  // Y of the reading point for a fractional cursor, interpolating between words.
-  const targetYFor = (c: number) => {
-    const i = Math.floor(c)
-    const f = c - i
-    const a = wordRefs.current[Math.min(i, script.words.length - 1)]
-    const b = wordRefs.current[Math.min(i + 1, script.words.length - 1)]
-    if (!a) return 0
-    const ya = a.offsetTop + a.offsetHeight / 2
-    const yb = b ? b.offsetTop + b.offsetHeight / 2 : ya
-    return ya + (yb - ya) * f
+  const yOfWord = (i: number) => {
+    const el = wordRefs.current[Math.max(0, Math.min(i, script.words.length - 1))]
+    return el ? el.offsetTop + el.offsetHeight / 2 : 0
   }
 
   useEffect(() => {
@@ -90,24 +83,32 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000)
       last = now
-      // Where should the reading line be? Drift ahead of the last confirmed word
-      // at the measured rate, capped so a pause doesn't run away.
-      let c = a.cursor
-      if (predict && a.rate > 0) {
-        // Drift at a fraction of the speaking rate so the text trails slightly
-        // rather than leads; the next recognizer update closes the gap.
-        const ahead = Math.min(1.2, a.rate * 0.6 * ((now - a.changedAt) / 1000))
-        c = Math.min(script.words.length - 1, a.cursor + ahead)
-      }
-      const target = window.innerHeight * prefs.lineAt - targetYFor(c)
-      // Adaptive glide: unhurried when close (~380ms), quicker when it has
-      // fallen more than a line behind (down to ~140ms).
       const lineH = fontPx(prefs) * 1.2
-      const behind = Math.abs(target - a.y) / lineH
-      const tau = Math.max(0.14, 0.38 - behind * 0.12)
-      const k = 1 - Math.exp(-dt / tau)
-      a.y += (target - a.y) * k
-      if (Math.abs(target - a.y) < 0.05) a.y = target
+      const desired = window.innerHeight * prefs.lineAt - yOfWord(a.cursor)
+      const error = desired - a.y // negative: we are behind, need to move up
+
+      let vCmd: number
+      const sinceWord = (now - a.changedAt) / 1000
+      if (predict && a.rate > 0 && sinceWord < 1.6) {
+        // Pace in px/s from the local layout (handles wraps and paragraph gaps).
+        const n = 8
+        const pxPerWord = (yOfWord(a.cursor + n) - yOfWord(a.cursor)) / n || lineH / 5
+        const pace = -a.rate * pxPerWord
+        // Hold the lock with a gentle proportional nudge, stronger when far off.
+        const gain = Math.abs(error) > lineH ? 3 : 1.2
+        vCmd = pace + error * gain
+      } else {
+        // Not tracking (paused, riffing, held, manual): settle onto the cursor.
+        vCmd = error * (Math.abs(error) > 2 * lineH ? 6 : 2.5)
+      }
+      // Ease velocity so starts, stops and pace changes are gradual.
+      const tau = Math.abs(error) > 2 * lineH ? 0.12 : 0.45
+      a.v += (vCmd - a.v) * (1 - Math.exp(-dt / tau))
+      a.y += a.v * dt
+      if (Math.abs(error) < 0.05 && Math.abs(a.v) < 0.5) {
+        a.y = desired
+        a.v = 0
+      }
       box.style.transform = `translate3d(0, ${a.y}px, 0)`
       a.raf = requestAnimationFrame(tick)
     }
@@ -201,8 +202,8 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
                   wordRefs.current[w.index] = el
                 }}
                 style={{
-                  color: w.index < clampedCursor ? 'rgba(255,255,255,0.35)' : w.index === clampedCursor ? 'var(--accent)' : '#fff',
-                  transition: 'color 150ms',
+                  color: w.index < clampedCursor ? 'rgba(255,255,255,0.35)' : '#fff',
+                  transition: 'color 400ms',
                 }}
               >
                 {w.text}{' '}
