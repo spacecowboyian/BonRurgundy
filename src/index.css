@@ -262,3 +262,29 @@ input[type="range"] { accent-color: var(--accent); }
   font-weight: 600;
   text-decoration: none;
 }
+
+/* ---- Progress scrollbar (right edge) ---- */
+.scrollbar {
+  position: fixed;
+  right: calc(2px + var(--sar));
+  top: calc(60px + var(--sat));
+  bottom: calc(68px + var(--sab));
+  width: 18px; /* generous hit area */
+  z-index: 11;
+  cursor: grab;
+  touch-action: none;
+}
+.scrollbar::before {
+  content: '';
+  position: absolute; top: 0; bottom: 0; right: 6px; width: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.12);
+}
+.scrollbar .thumb {
+  position: absolute; right: 6px; width: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.55);
+  transition: width 120ms, right 120ms;
+}
+.scrollbar.dragging { cursor: grabbing; }
+.scrollbar.dragging .thumb, .scrollbar:hover .thumb { width: 8px; right: 4px; background: var(--accent); }

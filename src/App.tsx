@@ -7,11 +7,14 @@ import { useRelay } from './hooks/useRelay'
 import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
 import { SAMPLE_SCRIPT } from './data/sampleScript'
+import { tidyScript } from './lib/tidy'
+import { fetchScript, scriptUrlFromLocation } from './lib/scriptUrl'
 import { VideoLayer } from './components/VideoLayer'
 import { Hud } from './components/Hud'
 import { MicButton } from './components/MicButton'
 import { Transport } from './components/Transport'
 import { DonateButton } from './components/DonateButton'
+import { ScrollBar } from './components/ScrollBar'
 import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
 import { SpeechPanel } from './components/SpeechPanel'
@@ -37,6 +40,34 @@ export default function App() {
   }, [prefs.fontSize, setPrefsRaw])
   const setPrefs = setPrefsRaw
   const [editing, setEditing] = useState(() => !scriptText.trim())
+  const [loadNote, setLoadNote] = useState<string | null>(null)
+
+  // ?script=<url>: fetch a text/markdown file and open the prompter with it.
+  useEffect(() => {
+    const url = scriptUrlFromLocation()
+    if (!url) return
+    setLoadNote('Loading script…')
+    setEditing(true)
+    fetchScript(url)
+      .then((text) => {
+        setScriptText(tidyScript(text))
+        setLoadNote(null)
+        setEditing(false)
+        setHudHidden(true)
+        ctl.reset()
+      })
+      .catch((e) => {
+        setLoadNote(`Couldn't load that script link (${e instanceof Error ? e.message : String(e)}). The file must be plain text or markdown and allow cross-origin reads; GitHub, Gist, Pastebin, Google Docs and Dropbox links work.`)
+      })
+      .finally(() => {
+        const u = new URL(window.location.href)
+        u.searchParams.delete('script')
+        const hash = new URLSearchParams(u.hash.replace(/^#/, ''))
+        hash.delete('script')
+        u.hash = hash.toString()
+        window.history.replaceState(null, '', u.pathname + u.search + (u.hash ? '#' + u.hash.replace(/^#/, '') : ''))
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hudHidden, setHudHidden] = useState(true)
   const [debugOpen, setDebugOpen] = useState(false)
@@ -104,7 +135,7 @@ export default function App() {
   // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
   const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
   useEffect(() => {
-    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.transport,.mic,.donate,.donate-sheet,button,input,select,label,a')
+    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.transport,.mic,.donate,.donate-sheet,.scrollbar,button,input,select,label,a')
     const onDown = (e: PointerEvent) => {
       if (editing || settingsOpen || isChrome(e.target)) return
       ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
@@ -242,7 +273,7 @@ export default function App() {
     }
     const onTouchStart = (e: TouchEvent) => {
       if (blocked()) return
-      if ((e.target as HTMLElement).closest?.('.bar,.sheet')) return
+      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.transport,.mic,.donate')) return
       touchY.current = e.touches[0].clientY
     }
     const onTouchMove = (e: TouchEvent) => {
@@ -267,6 +298,16 @@ export default function App() {
   }, [editing, settingsOpen, ctl, prefs])
 
   const voiceStatus = speech.status === 'listening' && aligner.enabled ? (aligner.held ? 'held' : aligner.state.status) : null
+  const [lineCount, setLineCount] = useState(1)
+  const setLines = ctl.setLines
+  const onLines = useCallback(
+    (starts: number[]) => {
+      setLines(starts)
+      setLineCount(Math.max(1, starts.length))
+    },
+    [setLines],
+  )
+  const visibleFraction = Math.min(1, window.innerHeight / (fontPx(prefs) * 1.35) / lineCount)
 
   return (
     <>
@@ -275,7 +316,7 @@ export default function App() {
         stream={relay.mode === 'receive' ? relay.remoteStream : cam.stream}
         mirror={prefs.mirror !== (relay.mode !== 'receive' && cam.info?.facingMode === 'user')}
       />
-      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={ctl.setLines} />
+      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={onLines} />
       <Hud
         ctl={ctl}
         wordCount={script.words.length}
@@ -283,6 +324,7 @@ export default function App() {
         onEdit={() => setEditing(true)}
         onSettings={() => setSettingsOpen(true)}
       />
+      {!editing && <ScrollBar cursor={ctl.cursor} wordCount={script.words.length} visibleFraction={visibleFraction} onSeek={ctl.setCursor} />}
       {!editing && <DonateButton />}
       {!editing && <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />}
       {!editing && (
@@ -306,7 +348,7 @@ export default function App() {
           }}
         />
       )}
-      {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={closeEditor} />}
+      {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={closeEditor} note={loadNote} />}
     </>
   )
 }

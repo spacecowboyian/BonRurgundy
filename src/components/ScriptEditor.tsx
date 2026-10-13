@@ -6,9 +6,11 @@ interface Props {
   text: string
   onChange: (t: string) => void
   onClose: () => void
+  /** Status or error line, e.g. while loading from a ?script= link. */
+  note?: string | null
 }
 
-export function ScriptEditor({ text, onChange, onClose }: Props) {
+export function ScriptEditor({ text, onChange, onClose, note }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const words = text.trim() ? text.trim().split(/\s+/).length : 0
@@ -58,6 +60,7 @@ export function ScriptEditor({ text, onChange, onClose }: Props) {
           Done
         </button>
       </div>
+      {note && <div style={{ color: note.startsWith("Couldn't") ? 'var(--warn)' : 'var(--muted)', fontSize: 13 }}>{note}</div>}
       <textarea
         autoFocus
         value={text}
