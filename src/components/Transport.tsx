@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { PrompterControl } from '../hooks/usePrompterControl'
+import { useLongPress } from '../hooks/useLongPress'
 
 interface Props {
   ctl: PrompterControl
@@ -14,15 +15,22 @@ const Icon = ({ d }: { d: string }) => (
 )
 
 /**
- * Tape-deck transport, bottom left. Collapsed: play/pause plus a chevron.
- * Open: start, previous paragraph, next paragraph, end slide out, and the
- * chevron flips to point back.
+ * Tape-deck transport, bottom left. Collapsed: play/pause plus a chevron
+ * (desktop) or a long press on play (touch). Open: start, previous, next, end.
  */
 export function Transport({ ctl, playing, onTogglePlay }: Props) {
   const [open, setOpen] = useState(false)
+  const longPress = useLongPress(() => setOpen((v) => !v))
   return (
-    <div className={`transport${open ? ' open' : ''}`}>
-      <button className="round" onClick={onTogglePlay} title={playing ? 'Pause' : 'Play at a fixed speed'} aria-label={playing ? 'Pause' : 'Play'} aria-pressed={playing}>
+    <div className={`dock left${open ? ' open' : ''}`}>
+      <button
+        className="round"
+        {...longPress}
+        onClick={onTogglePlay}
+        title={playing ? 'Pause' : 'Play at a fixed speed (hold for more)'}
+        aria-label={playing ? 'Pause' : 'Play'}
+        aria-pressed={playing}
+      >
         {playing ? <Icon d="M6 4h4v16H6zM14 4h4v16h-4z" /> : <Icon d="M7.5 4.5v15l12-7.5z" />}
       </button>
       <div className="extra" aria-hidden={!open}>
@@ -40,7 +48,7 @@ export function Transport({ ctl, playing, onTogglePlay }: Props) {
         </button>
       </div>
       <button className="chevron" onClick={() => setOpen((v) => !v)} title={open ? 'Hide controls' : 'More controls'} aria-label={open ? 'Hide controls' : 'More controls'} aria-expanded={open}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M9 6l6 6-6 6" />
         </svg>
       </button>

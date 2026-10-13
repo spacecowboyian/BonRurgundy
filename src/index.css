@@ -48,8 +48,8 @@ button.primary { background: var(--accent); color: #000; font-weight: 600; borde
 button.icon { width: 40px; padding: 0; font-size: 18px; }
 button.bare { width: 44px; height: 44px; background: transparent; border: none; display: inline-flex; align-items: center; justify-content: center; }
 button.bare:hover { background: rgba(255,255,255,0.08); }
-button.round { width: 44px; height: 44px; padding: 0; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); line-height: 0; }
-button.round svg, .mic svg, .donate svg, .github svg { display: block; }
+.round { width: 44px; height: 44px; padding: 0; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); line-height: 0; }
+.round svg, .mic svg { display: block; }
 button:disabled { opacity: 0.4; cursor: default; }
 input[type="text"] {
   background: rgba(255, 255, 255, 0.08);
@@ -200,70 +200,8 @@ input[type="range"] { accent-color: var(--accent); }
   100% { transform: scale(1.5); opacity: 0; }
 }
 
-/* ---- Transport (bottom left, collapsible) ---- */
-.transport {
-  position: fixed;
-  left: calc(12px + var(--sal));
-  bottom: calc(12px + var(--sab));
-  display: flex; align-items: center; gap: 8px;
-  z-index: 12;
-  touch-action: auto;
-}
-.transport .extra {
-  display: flex; gap: 8px;
-  max-width: 0; opacity: 0;
-  overflow: hidden;
-  transform: translateX(-12px);
-  transition: max-width 280ms cubic-bezier(.2,.8,.2,1), opacity 200ms, transform 280ms cubic-bezier(.2,.8,.2,1);
-  pointer-events: none;
-}
-.transport.open .extra {
-  max-width: 220px; opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-}
-.transport .chevron {
-  width: 32px; height: 44px; padding: 0;
-  background: transparent; border: none; border-radius: 0;
-  display: flex; align-items: center; justify-content: center;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
-}
-.transport .chevron svg { transition: transform 280ms cubic-bezier(.2,.8,.2,1); }
-.transport.open .chevron svg { transform: rotate(180deg); }
-.mic { left: 50%; transform: translateX(-50%); }
 
-/* ---- GitHub link (left of donate) ---- */
-.github {
-  position: fixed;
-  right: calc(64px + var(--sar));
-  bottom: calc(12px + var(--sab));
-  width: 44px; height: 44px;
-  border-radius: 22px;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.55);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  z-index: 12;
-  touch-action: auto;
-}
-
-/* ---- Donate ---- */
-.donate {
-  position: fixed;
-  right: calc(12px + var(--sar));
-  bottom: calc(12px + var(--sab));
-  width: 44px; height: 44px;
-  padding: 0;
-  border-radius: 22px;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.55);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  z-index: 12;
-  touch-action: auto;
-}
+/* ---- Donate sheet ---- */
 .donate-sheet {
   position: fixed;
   right: calc(12px + var(--sar));
@@ -316,3 +254,44 @@ input[type="range"] { accent-color: var(--accent); }
 }
 .scrollbar.dragging { cursor: grabbing; }
 .scrollbar.dragging .thumb, .scrollbar:hover .thumb { width: 8px; right: 4px; background: var(--accent); }
+
+/* ---- Bottom docks: collapsible button groups ---- */
+.dock {
+  position: fixed;
+  bottom: calc(12px + var(--sab));
+  display: flex; align-items: center; gap: 8px;
+  z-index: 12;
+  touch-action: auto;
+}
+.dock.left { left: calc(12px + var(--sal)); }
+.dock.right { right: calc(12px + var(--sar)); }
+.dock .extra {
+  display: flex; gap: 8px;
+  max-width: 0; opacity: 0;
+  overflow: hidden;
+  transition: max-width 280ms cubic-bezier(.2,.8,.2,1), opacity 200ms, transform 280ms cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+.dock.left .extra { transform: translateX(-12px); }
+.dock.right .extra { transform: translateX(12px); }
+.dock.open .extra { max-width: 240px; opacity: 1; transform: translateX(0); pointer-events: auto; }
+.dock .extra > * { flex: 0 0 auto; }
+.dock .chevron {
+  width: 22px; height: 44px; padding: 0; margin: 0 -4px;
+  background: transparent; border: none; border-radius: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.55);
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
+  transition: color 150ms;
+}
+.dock .chevron:hover, .dock .chevron:active { color: #fff; background: transparent; }
+.dock .chevron svg { transition: transform 280ms cubic-bezier(.2,.8,.2,1); }
+.dock.open .chevron svg { transform: rotate(180deg); }
+.dock .round { -webkit-touch-callout: none; user-select: none; }
+.dock a.round { text-decoration: none; }
+.mic { left: 50%; transform: translateX(-50%); }
+
+/* Touch devices: no chevrons, long-press the play or dollar button instead. */
+@media (hover: none) and (pointer: coarse) {
+  .dock .chevron { display: none; }
+}
