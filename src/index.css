@@ -282,8 +282,10 @@ input[type="range"] { accent-color: var(--accent); }
   display: flex; align-items: center; justify-content: center;
   color: rgba(255,255,255,0.55);
   filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
-  transition: color 150ms;
+  opacity: 0; /* hidden until the dock is hovered or open */
+  transition: color 150ms, opacity 150ms;
 }
+.dock:hover .chevron, .dock.open .chevron, .dock .chevron:focus-visible { opacity: 1; }
 .dock .chevron:hover, .dock .chevron:active { color: #fff; background: transparent; }
 .dock .chevron svg { transition: transform 280ms cubic-bezier(.2,.8,.2,1); }
 .dock.open .chevron svg { transform: rotate(180deg); }
