@@ -43,7 +43,7 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 - `src/lib/` pure, tested logic: `normalize` (text to comparable tokens), `aligner` (speech → script cursor), `commands` (wake-word grammar), `tidy` (markdown → spoken text), `scriptUrl` (`?script=` link handling), `script` (paragraph/word model).
 - `src/hooks/` browser glue: `useCamera`, `useSpeech`, `useAligner`, `usePrompterControl`, `useRelay` (Mac→phone WebRTC).
 - `src/components/` UI. `Prompter` is the text layer; `Hud`, `Transport`, `MicButton`, `ScrollBar`, `SettingsSheet`, `ScriptEditor`.
-- `src/data/sampleScript.ts` is the first-launch sample. It must not contain the product name (the recognizer can't hear it as one word) or any literal voice command such as "bon back" (it would fire while being read).
+- `src/data/sampleScript.ts` is the first-launch sample. It must not contain the product name (the recognizer can't hear it as one word). It deliberately says "bon back", which fires the command when read; that's the demo.
 - `public/` static files served at the site root, including `llms.txt`, `logo.svg`, `favicon.svg`, `icon-512.png`, `manifest.webmanifest`.
 
 ## Rules that are not obvious from the code

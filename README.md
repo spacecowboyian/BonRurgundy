@@ -97,7 +97,7 @@ npm run dev:https    # self-signed https so a phone on your Wi-Fi can use the mi
 npm test
 ```
 
-React, Vite, TypeScript, no backend. Pushes to main deploy to GitHub Pages through Actions. Agents: read AGENTS.md first. Humans: read CONTRIBUTING.md. MIT licensed. The sample script on first launch is a short pitch written to be read aloud. It never says the app's name, because the speech recognizer hears that as two or three unrelated words and the prompter stalls on it, and it never says a voice command, because the prompter would obey.
+React, Vite, TypeScript, no backend. Pushes to main deploy to GitHub Pages through Actions. Agents: read AGENTS.md first. Humans: read CONTRIBUTING.md. MIT licensed. The sample script on first launch is a short pitch written to be read aloud. It never says the app's name, because the speech recognizer hears that as two or three unrelated words and the prompter stalls on it. It does say "bon back", and yes, the prompter obeys.
 
 ## Credits and the fine print
 
