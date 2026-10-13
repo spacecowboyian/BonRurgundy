@@ -78,7 +78,7 @@ export function SettingsSheet({ cam, speech, aligner, ctl, prefs, setPrefs, auto
         <h3>Text</h3>
         <div className="row">
           <label>Size</label>
-          <input type="range" min={3} max={16} step={0.25} value={prefs.fontSize} onChange={(e) => setPrefs((p) => ({ ...p, fontSize: Number(e.target.value) }))} />
+          <input type="range" min={3} max={30} step={0.25} value={prefs.fontSize} onChange={(e) => setPrefs((p) => ({ ...p, fontSize: Number(e.target.value) }))} />
           <span className="val">{Math.round(fontPx(prefs))}px</span>
         </div>
         <div className="row">

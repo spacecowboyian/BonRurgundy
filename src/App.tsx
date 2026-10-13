@@ -41,12 +41,37 @@ export default function App() {
 
   const begin = useCallback(() => {
     setNeedsTap(false)
+    setHudHidden(true)
     if (autoListen && speech.status !== 'listening') speech.start()
   }, [autoListen, speech])
+
+  // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
+  const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
+  useEffect(() => {
+    const isChrome = (el: EventTarget | null) => (el as HTMLElement)?.closest?.('.bar,.sheet,.sheet-backdrop,.editor,.tap,button,input,select,label')
+    const onDown = (e: PointerEvent) => {
+      if (editing || settingsOpen || needsTap || isChrome(e.target)) return
+      ptr.current = { x: e.clientX, y: e.clientY, t: performance.now() }
+    }
+    const onUp = (e: PointerEvent) => {
+      const p = ptr.current
+      ptr.current = null
+      if (!p || isChrome(e.target)) return
+      const moved = Math.hypot(e.clientX - p.x, e.clientY - p.y)
+      if (moved < 12 && performance.now() - p.t < 500) setHudHidden((v) => !v)
+    }
+    window.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [editing, settingsOpen, needsTap])
 
   const closeEditor = useCallback(() => {
     if (!scriptText.trim()) return
     setEditing(false)
+    setHudHidden(true)
     ctl.reset()
     // Closing the editor is itself a gesture, so we can start right away.
     if (autoListen && speech.status !== 'listening') speech.start()
@@ -91,7 +116,7 @@ export default function App() {
           ctl.setWpm((w) => w - 10)
           break
         case ']':
-          setPrefs((p) => ({ ...p, fontSize: Math.min(16, p.fontSize + 0.5) }))
+          setPrefs((p) => ({ ...p, fontSize: Math.min(30, p.fontSize + 0.5) }))
           break
         case '[':
           setPrefs((p) => ({ ...p, fontSize: Math.max(3, p.fontSize - 0.5) }))
@@ -139,7 +164,7 @@ export default function App() {
   const touchY = useRef<number | null>(null)
   useEffect(() => {
     const blocked = () => editing || settingsOpen || needsTap
-    const pxPerWord = () => (fontPx(prefs) * 1.35) / 7 // ~7 words per line
+    const pxPerWord = () => (fontPx(prefs) * 1.2) / 5 // ~7 words per line
     const applyDelta = (dy: number) => {
       scrollAcc.current += dy
       const words = Math.trunc(scrollAcc.current / pxPerWord())
@@ -208,7 +233,10 @@ export default function App() {
           setPrefs={setPrefs}
           autoListen={autoListen}
           setAutoListen={setAutoListen}
-          onClose={() => setSettingsOpen(false)}
+          onClose={() => {
+            setSettingsOpen(false)
+            setHudHidden(true)
+          }}
         />
       )}
       {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={closeEditor} />}

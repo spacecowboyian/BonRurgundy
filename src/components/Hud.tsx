@@ -60,7 +60,7 @@ export function Hud({ cam, speech, aligner, ctl, wordCount, hidden, onEdit, onSe
         </span>
         <span className="spacer" />
         <span className="muted desktop-only">
-          Space scroll · ↑↓ line · V listen · E script · H hide · F fullscreen · say "{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back two"
+          Tap/click text to hide · Space scroll · ↑↓ line · V listen · E script · F fullscreen · say "{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back two"
         </span>
       </div>
     </>

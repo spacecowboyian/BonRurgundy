@@ -13,7 +13,9 @@ export interface PrompterPrefs {
 
 const vmin = () => Math.min(window.innerWidth, window.innerHeight)
 /** Phones get a bigger default; everything is per-device in localStorage anyway. */
-export const DEFAULT_PREFS: PrompterPrefs = { fontSize: vmin() < 500 ? 10 : 7, lineAt: 0.33, width: 0.85, mirror: false }
+export const DEFAULT_PREFS: PrompterPrefs = vmin() < 500
+  ? { fontSize: 18, lineAt: 0.3, width: 0.96, mirror: false } // phone, read from 5-10 ft
+  : { fontSize: 7, lineAt: 0.33, width: 0.85, mirror: false }
 
 export const fontPx = (p: PrompterPrefs) => (p.fontSize / 100) * vmin()
 
@@ -75,7 +77,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
 
   useEffect(() => {
     if (!onLayout) return
-    const lineHeight = fontPx(prefs) * 1.35
+    const lineHeight = fontPx(prefs) * 1.2
     const linesVisible = window.innerHeight / lineHeight
     // Rough words-per-line from average word width.
     const avgWordPx = fontPx(prefs) * 0.55 * 6
@@ -95,9 +97,9 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
         transform: prefs.mirror ? 'scaleX(-1)' : undefined,
         // Fade top and bottom so the text reads as a band around the reading line.
         maskImage:
-          'linear-gradient(to bottom, transparent 0%, black 12%, black 60%, transparent 92%)',
+          'linear-gradient(to bottom, transparent 0%, black 8%, black 78%, transparent 100%)',
         WebkitMaskImage:
-          'linear-gradient(to bottom, transparent 0%, black 12%, black 60%, transparent 92%)',
+          'linear-gradient(to bottom, transparent 0%, black 8%, black 78%, transparent 100%)',
       }}
     >
       {/* Reading line marker */}
@@ -120,7 +122,7 @@ export function Prompter({ script, cursor, prefs, onLayout, status, onLines }: P
           width: `${prefs.width * 100}%`,
           margin: '0 auto',
           fontSize: `${prefs.fontSize}vmin`,
-          lineHeight: 1.35,
+          lineHeight: 1.2,
           fontWeight: 600,
           textShadow: '0 2px 12px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)',
           transition: 'transform 220ms cubic-bezier(.2,.8,.2,1)',
