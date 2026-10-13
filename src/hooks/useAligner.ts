@@ -39,7 +39,8 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
   const lastSet = useRef<number>(-1)
   const interimTokens = useMemo(() => normalize(speech.interim), [speech.interim])
   const [held, setHeld] = useState(false)
-  const [wakeText, setWakeText] = useLocalState('osmo-prompter.wake', DEFAULT_WAKE.join(', '))
+  const [wakeTextRaw, setWakeText] = useLocalState<string>('osmo-prompter.wake', DEFAULT_WAKE.join(', '))
+  const wakeText = wakeTextRaw ?? ''
   const wake = useMemo(() => {
     const w = parseWakeList(wakeText)
     return w.length ? w : DEFAULT_WAKE

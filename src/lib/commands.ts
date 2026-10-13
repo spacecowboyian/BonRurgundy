@@ -14,8 +14,8 @@ export const DEFAULT_WAKE = ['bob']
 export const WAKE = DEFAULT_WAKE[0]
 
 /** Parse a user-entered wake list: "cue, q, queue" -> normalized tokens. */
-export function parseWakeList(s: string): string[] {
-  return s
+export function parseWakeList(s: string | null | undefined): string[] {
+  return (s ?? '')
     .toLowerCase()
     .split(/[\s,]+/)
     .map((w) => w.replace(/[^a-z0-9]/g, ''))
