@@ -8,6 +8,8 @@ export interface StreamInfo {
   frameRate?: number
   deviceLabel?: string
   deviceId?: string
+  /** 'user' for a front/selfie camera, 'environment' for rear, else undefined. */
+  facingMode?: string
   /** Advertised ranges from track.getCapabilities(), when the browser exposes them. */
   caps?: { width?: ULongRange; height?: ULongRange; frameRate?: DoubleRange }
 }
@@ -30,12 +32,14 @@ export interface UseCameraResult {
 const LS_KEY = 'osmo-prompter.cameraDeviceId'
 const LS_FPS = 'osmo-prompter.fps'
 
-/** Prefer the DJI if present, else the saved choice, else the first camera. */
+/** Prefer the saved choice, then a DJI, then a front camera (phones), then the first camera. */
 function pickDefault(devices: MediaDeviceInfo[]): string | null {
   const saved = localStorage.getItem(LS_KEY)
   if (saved && devices.some((d) => d.deviceId === saved)) return saved
   const dji = devices.find((d) => /dji|osmo|pocket/i.test(d.label))
-  return dji?.deviceId ?? devices[0]?.deviceId ?? null
+  if (dji) return dji.deviceId
+  const front = devices.find((d) => /front|user|facetime|selfie/i.test(d.label))
+  return front?.deviceId ?? devices[0]?.deviceId ?? null
 }
 
 export function useCamera(): UseCameraResult {
@@ -139,6 +143,7 @@ export function useCamera(): UseCameraResult {
             frameRate: st.frameRate,
             deviceLabel: track.label,
             deviceId: st.deviceId,
+            facingMode: st.facingMode,
             caps: c ? { width: c.width, height: c.height, frameRate: c.frameRate } : undefined,
           })
           console.log('[useCamera] settings', st, 'capabilities', c)

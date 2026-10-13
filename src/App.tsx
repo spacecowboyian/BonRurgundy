@@ -237,7 +237,8 @@ export default function App() {
 
   return (
     <>
-      <VideoLayer stream={cam.stream} mirror={prefs.mirror} />
+      {/* Front cameras get a selfie-style mirrored preview; the text is only mirrored for beam-splitter glass. */}
+      <VideoLayer stream={cam.stream} mirror={prefs.mirror !== (cam.info?.facingMode === 'user')} />
       <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={ctl.setLines} />
       <Hud
         ctl={ctl}
