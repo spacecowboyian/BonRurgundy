@@ -6,6 +6,7 @@ import { useAligner } from './hooks/useAligner'
 import { useRelay } from './hooks/useRelay'
 import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
+import { SAMPLE_SCRIPT } from './data/sampleScript'
 import { VideoLayer } from './components/VideoLayer'
 import { Hud } from './components/Hud'
 import { MicButton } from './components/MicButton'
@@ -22,6 +23,13 @@ export default function App() {
   const speech = useSpeech()
   const relay = useRelay()
   const [scriptText, setScriptText] = useLocalState('osmo-prompter.script', '')
+  // One-time migration: devices that opened the PoC got the old private seed
+  // script saved to local storage. Swap it for the current sample.
+  useEffect(() => {
+    if (/^Ladies and gentlemen, brothers and sisters, welcome back to the Church of Combustion/.test(scriptText)) {
+      setScriptText(SAMPLE_SCRIPT)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [prefs, setPrefsRaw] = useLocalState<PrompterPrefs>('osmo-prompter.prefs2', DEFAULT_PREFS)
   // Older builds stored font size in px; anything over 20 can't be a vh value.
   useEffect(() => {
