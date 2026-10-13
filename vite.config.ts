@@ -9,7 +9,7 @@ import { defineConfig } from 'vite'
 export default defineConfig(({ mode }) => ({
   plugins: [react(), ...(mode === 'https' ? [basicSsl()] : [])],
   // GitHub Pages serves from /<repo>/; local dev stays at /.
-  base: process.env.GITHUB_PAGES ? '/bonrurgundy/' : '/',
+  base: process.env.GITHUB_PAGES ? './' : '/',
   server: { host: true, port: 5173 },
   test: { environment: 'jsdom', globals: true },
 }))
