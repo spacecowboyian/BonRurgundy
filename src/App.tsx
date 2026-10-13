@@ -31,8 +31,8 @@ export default function App() {
   useEffect(() => {
     if (/^Ladies and gentlemen, brothers and sisters, welcome back to the Church of Combustion/.test(scriptText)) {
       setScriptText(SAMPLE_SCRIPT)
-    } else if (/^<p align="center">/.test(scriptText)) {
-      setScriptText(SAMPLE_SCRIPT) // earlier sample carried the README's html logo line
+    } else if (/^<p align="center">/.test(scriptText) || /^A teleprompter that actually listens to you\./.test(scriptText)) {
+      setScriptText(SAMPLE_SCRIPT) // earlier samples were the whole README
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [prefs, setPrefsRaw] = useLocalState<PrompterPrefs>('osmo-prompter.prefs2', DEFAULT_PREFS)
