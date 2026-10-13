@@ -139,7 +139,7 @@ export function CameraHud({ cam, prefs, setPrefs, ctl, wordCount, onEdit, onFull
         <span style={{ flex: 1 }} />
         <button onClick={onEdit}>Edit script (E)</button>
         <span style={{ color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-          Space play · ↑↓ nudge · +/- speed · [ ] size · Home reset · H hide
+          Space play · ↑↓ nudge · +/- speed · [ ] size · V listen · T transcript · H hide
         </span>
       </div>
     </>

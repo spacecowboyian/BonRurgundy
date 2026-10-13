@@ -1,0 +1,102 @@
+import { useEffect, useRef } from 'react'
+import type { UseSpeechResult } from '../hooks/useSpeech'
+
+interface Props {
+  speech: UseSpeechResult
+  hidden: boolean
+}
+
+export function SpeechPanel({ speech, hidden }: Props) {
+  const { status, error, finals, interim, log, lastGapMs, start, stop, clear, mics, micId, setMicId } = speech
+  const logRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight })
+  }, [log])
+
+  const listening = status === 'listening'
+  const dot = status === 'listening' ? 'var(--ok)' : status === 'error' ? 'var(--warn)' : 'var(--muted)'
+  const wordCount = finals.reduce((n, c) => n + c.text.split(/\s+/).filter(Boolean).length, 0)
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        right: 12,
+        top: 60,
+        width: 360,
+        maxHeight: 'calc(100vh - 140px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        padding: 10,
+        background: 'var(--panel)',
+        borderRadius: 10,
+        backdropFilter: 'blur(8px)',
+        fontSize: 13,
+        zIndex: 10,
+        opacity: hidden ? 0 : 1,
+        pointerEvents: hidden ? 'none' : 'auto',
+        transition: 'opacity 200ms',
+      }}
+    >
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <span style={{ width: 10, height: 10, borderRadius: 5, background: dot, boxShadow: listening ? `0 0 8px ${dot}` : undefined }} />
+        <strong>Speech</strong>
+        <span style={{ color: 'var(--muted)' }}>{status}</span>
+        <span style={{ flex: 1 }} />
+        <button onClick={listening ? stop : start} style={{ fontWeight: 600 }} disabled={status === 'unsupported'}>
+          {listening ? 'Stop (V)' : 'Listen (V)'}
+        </button>
+        <button onClick={clear}>Clear</button>
+      </div>
+      <select value={micId ?? ''} onChange={(e) => setMicId(e.target.value)} disabled={listening}>
+        {mics.length === 0 && <option value="">No mics</option>}
+        {mics.map((d) => (
+          <option key={d.deviceId} value={d.deviceId}>
+            {d.label || `Mic ${d.deviceId.slice(0, 6)}`}
+          </option>
+        ))}
+      </select>
+      {status === 'unsupported' && <span style={{ color: 'var(--warn)' }}>Web Speech API not available. Use Chrome.</span>}
+      {error && <span style={{ color: 'var(--warn)' }}>{error}</span>}
+      <div style={{ display: 'flex', gap: 12, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+        <span>{wordCount} final words</span>
+        <span>{finals.length} segments</span>
+        {lastGapMs != null && <span>gap {lastGapMs.toFixed(0)} ms</span>}
+      </div>
+      <div
+        style={{
+          minHeight: 44,
+          padding: 8,
+          borderRadius: 6,
+          background: 'rgba(255,204,51,0.08)',
+          border: '1px solid rgba(255,204,51,0.25)',
+          fontStyle: 'italic',
+          color: interim ? 'var(--accent)' : 'var(--muted)',
+        }}
+      >
+        {interim || 'interim…'}
+      </div>
+      <div
+        ref={logRef}
+        style={{
+          overflowY: 'auto',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          fontFamily: 'ui-monospace, Menlo, monospace',
+          fontSize: 12,
+        }}
+      >
+        {log.map((c, i) => (
+          <div key={i} style={{ color: c.isFinal ? '#fff' : 'var(--muted)', opacity: c.isFinal ? 1 : 0.6 }}>
+            <span style={{ color: c.isFinal ? 'var(--ok)' : 'var(--muted)' }}>{c.isFinal ? 'F' : 'i'}</span>{' '}
+            {c.confidence != null && c.isFinal && <span style={{ color: 'var(--muted)' }}>{(c.confidence * 100).toFixed(0)}% </span>}
+            {c.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

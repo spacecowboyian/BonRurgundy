@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCamera } from './hooks/useCamera'
 import { usePrompterControl } from './hooks/usePrompterControl'
+import { useSpeech } from './hooks/useSpeech'
 import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
 import { SAMPLE_SCRIPT } from './data/sampleScript'
 import { VideoLayer } from './components/VideoLayer'
 import { CameraHud } from './components/CameraHud'
 import { ScriptEditor } from './components/ScriptEditor'
+import { SpeechPanel } from './components/SpeechPanel'
 import { DEFAULT_PREFS, Prompter, type PrompterPrefs } from './components/Prompter'
 
 export default function App() {
@@ -15,6 +17,8 @@ export default function App() {
   const [prefs, setPrefs] = useLocalState<PrompterPrefs>('osmo-prompter.prefs', DEFAULT_PREFS)
   const [editing, setEditing] = useState(() => !scriptText.trim())
   const [hudHidden, setHudHidden] = useState(false)
+  const [speechHidden, setSpeechHidden] = useState(false)
+  const speech = useSpeech()
 
   const script = useMemo(() => parseScript(scriptText), [scriptText])
   const ctl = usePrompterControl(script.words.length)
@@ -80,11 +84,19 @@ export default function App() {
         case 'F':
           toggleFullscreen()
           break
+        case 'v':
+        case 'V':
+          speech.status === 'listening' ? speech.stop() : speech.start()
+          break
+        case 't':
+        case 'T':
+          setSpeechHidden((v) => !v)
+          break
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing, ctl, setPrefs])
+  }, [editing, ctl, setPrefs, speech])
 
   return (
     <>
@@ -100,6 +112,7 @@ export default function App() {
         onFullscreen={toggleFullscreen}
         hidden={hudHidden}
       />
+      <SpeechPanel speech={speech} hidden={hudHidden || speechHidden} />
       {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={() => setEditing(false)} />}
     </>
   )
