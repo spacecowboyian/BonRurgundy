@@ -41,7 +41,7 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 ## Where things live
 
 - `src/lib/` pure, tested logic: `normalize` (text to comparable tokens), `aligner` (speech → script cursor), `commands` (wake-word grammar), `tidy` (markdown → spoken text), `scriptUrl` (`?script=` link handling), `script` (paragraph/word model).
-- `src/hooks/` browser glue: `useCamera`, `useSpeech`, `useAligner`, `usePrompterControl`, `useRelay` (Mac→phone WebRTC).
+- `src/hooks/` browser glue: `useCamera`, `useSpeech`, `useAligner`, `usePrompterControl`, `useRelay` (Mac→phone WebRTC), `useRecorder` (MediaRecorder; File System Access streaming on desktop, in-memory with a cap plus share sheet on phones).
 - `src/components/` UI. `Prompter` is the text layer; `Hud`, `Transport`, `MicButton`, `ScrollBar`, `SettingsSheet`, `ScriptEditor`.
 - `src/data/sampleScript.ts` builds the sample from the README's opening section at build time. Editing the top of `README.md` changes the sample.
 - `public/` static files served at the site root, including `llms.txt`, `logo.svg`, `favicon.svg`, `icon-512.png`, `manifest.webmanifest`.

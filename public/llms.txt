@@ -35,7 +35,8 @@ Example:
 1. The prompter opens with the words on a black background. Tap the mic icon (bottom left) and allow the microphone. Read.
 2. Voice commands, all prefixed with the wake word "bon": "bon back", "bon back two" (lines), "bon forward three", "bon next" / "bon previous" (paragraphs), "bon start", "bon end", "bon play" / "bon pause" (fixed-speed scroll), "bon hold" / "bon go".
 3. The top bar has the word count, script and settings. Swipe to scroll by hand.
-4. Settings: text size, reading-line position, mirror mode for beam-splitter glass, wake word, mic, optional camera feed behind the words.
+4. With a camera feed on, a red record button next to the mic records the feed: desktop asks where to save and streams to disk (WebM); phones record in memory (MP4) with a 10-minute cap and offer the share sheet on stop.
+5. Settings: text size, reading-line position, mirror mode for beam-splitter glass, wake word, mic, optional camera feed behind the words.
 
 ## Privacy
 

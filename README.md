@@ -62,6 +62,8 @@ On a laptop, the space bar plays and pauses. The up and down arrows move a line.
 
 The camera is off by default. Turn it on for a feed behind the words, then pick the source and the frame rate. The Pocket 3 will do 4K at 24 frames per second over USB if you ask nicely.
 
+If a camera feed is on, a red record button appears next to the microphone. On a laptop it asks where to save and writes the file as it goes. On a phone it records in memory, up to ten minutes a take, and offers the share sheet when you stop so you can save to Photos. Treat it as a backup when a real camera is recording to its own card.
+
 Phone monitor is for the Mac relay. With the Osmo plugged into the Mac, tap "Share this camera to a phone" and scan the code with your phone. The video goes peer to peer over your Wi‑Fi.
 
 Voice holds the microphone choice, the wake word, and the follow-my-voice toggle. Text holds the size, the reading line position, the width, and the mirror mode for beam-splitter glass. Play speed sets the pace for the fixed-speed mode.

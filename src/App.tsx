@@ -4,6 +4,7 @@ import { usePrompterControl } from './hooks/usePrompterControl'
 import { useSpeech } from './hooks/useSpeech'
 import { useAligner } from './hooks/useAligner'
 import { useRelay } from './hooks/useRelay'
+import { useRecorder } from './hooks/useRecorder'
 import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
 import { SAMPLE_SCRIPT } from './data/sampleScript'
@@ -14,6 +15,7 @@ import { Hud } from './components/Hud'
 import { MicButton } from './components/MicButton'
 import { Transport } from './components/Transport'
 import { RightDock } from './components/RightDock'
+import { RecordButton } from './components/RecordButton'
 import { ScrollBar } from './components/ScrollBar'
 import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
@@ -25,6 +27,8 @@ export default function App() {
   const cam = useCamera(cameraOn)
   const speech = useSpeech()
   const relay = useRelay()
+  const feed = relay.remoteStream ?? cam.stream
+  const rec = useRecorder(feed, speech.micId)
   const [scriptText, setScriptText] = useLocalState('osmo-prompter.script', '')
   // One-time migration: devices that opened the PoC got the old private seed
   // script saved to local storage. Swap it for the current sample.
@@ -248,7 +252,7 @@ export default function App() {
     }
     const onTouchStart = (e: TouchEvent) => {
       if (blocked()) return
-      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.dock,.center-dock,.mic,.donate-sheet')) return
+      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.dock,.center-dock,.mic,.recwrap,.donate-sheet')) return
       touchY.current = e.touches[0].clientY
     }
     const onTouchMove = (e: TouchEvent) => {
@@ -304,7 +308,7 @@ export default function App() {
     <>
       {/* Front cameras get a selfie-style mirrored preview; the text is only mirrored for beam-splitter glass. */}
       <VideoLayer
-        stream={relay.remoteStream ?? cam.stream}
+        stream={feed}
         mirror={prefs.mirror !== (!relay.remoteStream && cam.info?.facingMode === 'user')}
       />
       <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={onLines} />
@@ -323,6 +327,7 @@ export default function App() {
       {!editing && (
         <div className="center-dock">
           <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} guide={!micGuided && !listening} />
+          <RecordButton rec={rec} available={!!feed} />
         </div>
       )}
       {debugOpen && <SpeechPanel speech={speech} aligner={aligner} hidden={false} />}
