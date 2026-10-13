@@ -29,7 +29,8 @@ npm install
 | bon back | up |
 
 ![pic](a.png)
-Visit https://example.com now.`
-    expect(tidyScript(input)).toBe('Intro line with a link and code.\n\nVisit now.')
+Visit https://example.com now.
+Live at: https://example.com`
+    expect(tidyScript(input)).toBe('Intro line with a link and code.\n\nVisit now.\nLive at.')
   })
 })

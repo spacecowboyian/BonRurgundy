@@ -24,6 +24,7 @@ export function tidyScript(text: string): string {
       l = l.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // [text](url) -> text
       l = l.replace(/`([^`]*)`/g, '$1')
       l = l.replace(/https?:\/\/\S+/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1') // bare URLs don't read aloud
+      l = l.replace(/:\s*$/, '.') // "Live at:" with the URL gone reads better as a sentence
       l = l.replace(/^>\s?/, '').replace(/^[-*]\s+/, '')
       l = l.replace(/^["“]|["”]$/g, '')
       return l
