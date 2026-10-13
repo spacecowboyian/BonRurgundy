@@ -7,6 +7,7 @@ import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
 import { VideoLayer } from './components/VideoLayer'
 import { Hud } from './components/Hud'
+import { MicButton } from './components/MicButton'
 import { SettingsSheet } from './components/SettingsSheet'
 import { ScriptEditor } from './components/ScriptEditor'
 import { SpeechPanel } from './components/SpeechPanel'
@@ -44,6 +45,33 @@ export default function App() {
     setHudHidden(true)
     if (autoListen && speech.status !== 'listening') speech.start()
   }, [autoListen, speech])
+
+  // Showing any interface pauses listening; hiding it again resumes.
+  const uiOpen = !hudHidden || settingsOpen || editing
+  const resumeOnHide = useRef(false)
+  const listening = speech.status === 'listening'
+  useEffect(() => {
+    if (needsTap) return
+    if (uiOpen && listening) {
+      resumeOnHide.current = true
+      speech.stop()
+    } else if (!uiOpen && !listening && resumeOnHide.current) {
+      resumeOnHide.current = false
+      speech.start()
+    }
+  }, [uiOpen, listening, needsTap, speech])
+
+  const toggleMic = useCallback(() => {
+    if (listening) {
+      resumeOnHide.current = false
+      speech.stop()
+    } else {
+      resumeOnHide.current = false
+      setHudHidden(true)
+      setSettingsOpen(false)
+      speech.start()
+    }
+  }, [listening, speech])
 
   // A tap/click on the words or video toggles the bars. A drag is a scroll, not a tap.
   const ptr = useRef<{ x: number; y: number; t: number } | null>(null)
@@ -143,7 +171,7 @@ export default function App() {
           break
         case 'v':
         case 'V':
-          speech.status === 'listening' ? speech.stop() : speech.start()
+          toggleMic()
           break
         case 't':
         case 'T':
@@ -156,7 +184,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing, settingsOpen, needsTap, begin, closeEditor, ctl, setPrefs, speech, toggleFullscreen])
+  }, [editing, settingsOpen, needsTap, begin, closeEditor, ctl, setPrefs, toggleMic, toggleFullscreen])
 
   // Wheel / trackpad / touch scrolling on the text. Pixels are converted to
   // words using the current font size so the feel stays constant across sizes.
@@ -222,6 +250,9 @@ export default function App() {
         onSettings={() => setSettingsOpen(true)}
         onFullscreen={toggleFullscreen}
       />
+      {!editing && !needsTap && (
+        <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />
+      )}
       {debugOpen && <SpeechPanel speech={speech} aligner={aligner} hidden={false} />}
       {settingsOpen && (
         <SettingsSheet

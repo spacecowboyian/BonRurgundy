@@ -20,7 +20,7 @@ export function Hud({ cam, speech, aligner, ctl, wordCount, hidden, onEdit, onSe
   const is4k = (info?.width ?? 0) >= 3840
   const resColor = status !== 'live' ? 'var(--muted)' : is4k ? 'var(--ok)' : 'var(--warn)'
   const listening = speech.status === 'listening'
-  const voiceState = !listening ? 'off' : aligner.held ? 'held' : aligner.state.status
+  const voiceState = !listening ? 'paused' : aligner.held ? 'held' : aligner.state.status
   const voiceColor =
     voiceState === 'tracking' ? 'var(--ok)' : voiceState === 'riffing' ? 'var(--warn)' : voiceState === 'held' ? 'var(--accent)' : 'var(--muted)'
   const cls = `bar${hidden ? ' hidden' : ''}`
@@ -43,9 +43,6 @@ export function Hud({ cam, speech, aligner, ctl, wordCount, hidden, onEdit, onSe
           {voiceState}
         </span>
         <span className="spacer" />
-        <button onClick={listening ? speech.stop : speech.start} disabled={speech.status === 'unsupported'}>
-          {listening ? 'Stop' : 'Listen'}
-        </button>
         <button onClick={onEdit}>Script</button>
         <button className="icon" onClick={onSettings} title="Settings">⚙</button>
         <button className="icon desktop-only" onClick={onFullscreen} title="Fullscreen">⛶</button>
@@ -60,7 +57,7 @@ export function Hud({ cam, speech, aligner, ctl, wordCount, hidden, onEdit, onSe
         </span>
         <span className="spacer" />
         <span className="muted desktop-only">
-          Tap/click text to hide · Space scroll · ↑↓ line · V listen · E script · F fullscreen · say "{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back two"
+          Tap text to hide and resume · Space scroll · ↑↓ line · V listen · E script · F fullscreen · say "{aligner.wakeText.split(/[,\s]+/)[0] || 'bob'} back two"
         </span>
       </div>
     </>
