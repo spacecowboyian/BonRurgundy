@@ -160,7 +160,10 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
           runCommand(parsed.commands[parsed.commands.length - 1])
         }, 350)
       }
-      return
+      // Until the command has actually fired the cursor hasn't moved, so the
+      // words after it can't be aligned yet. Once it has fired, fall through
+      // and align them from the new position like any other speech.
+      if (firedInterim.current !== fp) return
     } else if (interimTokens.length === 0) {
       firedInterim.current = null
       pendingFp.current = null
