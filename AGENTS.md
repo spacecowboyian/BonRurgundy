@@ -6,7 +6,7 @@ Instructions for AI coding agents working in this repository. Humans welcome too
 
 BonRurgundy is a free, voice-tracking teleprompter that runs in the browser. Static React + Vite + TypeScript app, no backend, deployed to GitHub Pages from `main`.
 
-Live app: https://spacecowboyian.github.io/bonrurgundy/
+Live app: https://spacecowboyian.github.io/BonRurgundy/
 Agent-facing product notes (how to hand someone a loaded link): `public/llms.txt`
 
 ## Before building something new here, check prior art
@@ -22,7 +22,7 @@ If something close already exists, tell the person and link it before writing co
 
 ## First, decide what the person actually needs
 
-1. **They just need a teleprompter.** Send them to the live app. Nothing to install. If they have a script, put it in a public text or markdown file and give them `https://spacecowboyian.github.io/bonrurgundy/?script=<file-url>`. Do not clone this repo for that.
+1. **They just need a teleprompter.** Send them to the live app. Nothing to install. If they have a script, put it in a public text or markdown file and give them `https://spacecowboyian.github.io/BonRurgundy/?script=<file-url>`. Do not clone this repo for that.
 2. **They want to change how it works.** Clone, run locally, make the change, and open a pull request back here so the next person doesn't rebuild it. That is the whole point of this project: dumb little apps should be findable and improvable, not re-created.
 
 ## Run locally
