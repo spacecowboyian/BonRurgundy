@@ -14,11 +14,12 @@ Goal: a Chrome tab on the Mac showing the Pocket 3 feed full-screen with a scrip
 - **Test:** 4K badge appears for Pocket 3? Press record on the camera, exit webcam mode, check card clip resolution. Log result in `hardware-findings` (this answers the open 4K question).
 - **Result 2026-10-13:** done. Requesting 3840x2160 puts the camera in 4K30; requesting exact 24 fps puts it in 4K24 (confirmed on the camera screen). Host UVC request drives camera mode. Card clip resolution at 4K24 still to be eyeballed.
 
-## Phase 2: Script + manual prompter
+## Phase 2: Script + manual prompter (DONE 2026-10-13)
 - Script editor route: textarea, saved to localStorage.
 - Prompter overlay: large text, gradient fades top/bottom, reading line at top third, passed words dimmed.
 - Manual controls: space = pause/resume, arrows = nudge, +/- = speed, `m` = mirror toggle, `f` = fullscreen.
 - **Test:** usable as a dumb teleprompter over the live feed.
+- **Result:** built. Seeded with the Reverend's lines from the CoC "Resurrection Protocol" script. Speed mode is wpm-driven; aligner will replace it in Phase 4.
 
 ## Phase 3: Speech-to-text
 - `useSpeech` hook on Web Speech API (`webkitSpeechRecognition`, `continuous`, `interimResults`). Select Pocket 3 mic as input.
