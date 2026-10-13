@@ -118,22 +118,31 @@ export function useCamera(enabled: boolean): UseCameraResult {
     setError(null)
     ;(async () => {
       try {
-        const base = { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 } }
-        let s: MediaStream
-        try {
-          // Ask for the exact rate first so the browser must pick a matching UVC mode.
-          s = await navigator.mediaDevices.getUserMedia({
-            video: { ...base, frameRate: { exact: fps } },
-            audio: false,
-          })
-        } catch (e) {
-          if (!(e instanceof Error) || e.name !== 'OverconstrainedError') throw e
-          console.warn(`[useCamera] ${fps}fps not available at 4K, falling back to ideal`)
-          s = await navigator.mediaDevices.getUserMedia({
-            video: { ...base, frameRate: { ideal: fps } },
-            audio: false,
-          })
+        // Try the ideal request first, then progressively simpler ones. WebKit
+        // (Safari, and every browser on iOS) is picky about exact frame rates
+        // and sometimes about deviceId; the last rung asks only for a front camera.
+        const attempts: MediaStreamConstraints[] = [
+          { video: { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { exact: fps } }, audio: false },
+          { video: { deviceId: { exact: deviceId }, width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: fps } }, audio: false },
+          { video: { deviceId: { exact: deviceId } }, audio: false },
+          { video: { deviceId: { ideal: deviceId } }, audio: false },
+          { video: { facingMode: 'user' }, audio: false },
+          { video: true, audio: false },
+        ]
+        let s: MediaStream | null = null
+        let lastErr: unknown = null
+        for (const c of attempts) {
+          try {
+            s = await navigator.mediaDevices.getUserMedia(c)
+            break
+          } catch (e) {
+            lastErr = e
+            console.warn('[useCamera] attempt failed', c, e)
+            // Permission problems won't improve with simpler constraints.
+            if (e instanceof Error && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) break
+          }
         }
+        if (!s) throw lastErr ?? new Error('no camera stream')
         if (cancelled) {
           s.getTracks().forEach((t) => t.stop())
           return

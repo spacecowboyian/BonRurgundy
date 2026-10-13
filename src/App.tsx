@@ -74,10 +74,10 @@ export default function App() {
   const [hudHidden, setHudHidden] = useState(true)
   const [debugOpen, setDebugOpen] = useState(false)
 
-  // Receiving from the Mac: release the phone's own camera.
+  // Once the Mac's feed actually arrives, release the phone's own camera.
   useEffect(() => {
-    if (relay.mode === 'receive') cam.stop()
-  }, [relay.mode]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (relay.mode === 'receive' && relay.remoteStream) cam.stop()
+  }, [relay.mode, relay.remoteStream]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // While sharing, follow camera switches.
   useEffect(() => {
@@ -315,12 +315,13 @@ export default function App() {
     <>
       {/* Front cameras get a selfie-style mirrored preview; the text is only mirrored for beam-splitter glass. */}
       <VideoLayer
-        stream={relay.mode === 'receive' ? relay.remoteStream : cam.stream}
-        mirror={prefs.mirror !== (relay.mode !== 'receive' && cam.info?.facingMode === 'user')}
+        stream={relay.remoteStream ?? cam.stream}
+        mirror={prefs.mirror !== (!relay.remoteStream && cam.info?.facingMode === 'user')}
       />
       <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={voiceStatus} onLines={onLines} />
       <Hud
         ctl={ctl}
+        cameraNote={cameraOn && cam.status !== 'live' ? (cam.error ? `camera: ${cam.error}` : cam.status === 'requesting' ? 'camera…' : 'camera: no stream') : null}
         wordCount={script.words.length}
         hidden={hudHidden}
         onEdit={() => setEditing(true)}

@@ -70,6 +70,7 @@ export function useRelay(): RelayView {
     setStatus('off')
     setCode(null)
     setError(null)
+    sessionStorage.removeItem(LS_CODE)
     localStorage.removeItem(LS_CODE)
   }, [teardown])
 
@@ -141,7 +142,7 @@ export function useRelay(): RelayView {
       if (c.length !== 4) return
       teardown()
       wantRef.current = { mode: 'receive', code: c }
-      localStorage.setItem(LS_CODE, c)
+      sessionStorage.setItem(LS_CODE, c)
       setMode('receive')
       setCode(c)
       setStatus('connecting')
@@ -186,7 +187,9 @@ export function useRelay(): RelayView {
   useEffect(() => {
     const url = new URL(window.location.href)
     const fromUrl = url.searchParams.get('join')
-    const remembered = localStorage.getItem(LS_CODE)
+    // Remembered only for this tab session: a stale code must not hijack the camera later.
+    const remembered = sessionStorage.getItem(LS_CODE)
+    localStorage.removeItem(LS_CODE)
     const c = fromUrl ?? remembered
     if (c && normalizeCode(c).length === 4) {
       if (fromUrl) {

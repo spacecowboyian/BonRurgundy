@@ -2,15 +2,17 @@ import type { PrompterControl } from '../hooks/usePrompterControl'
 
 interface Props {
   ctl: PrompterControl
+  cameraNote?: string | null
   wordCount: number
   hidden: boolean
   onEdit: () => void
   onSettings: () => void
 }
 
-export function Hud({ ctl, wordCount, hidden, onEdit, onSettings }: Props) {
+export function Hud({ ctl, cameraNote, wordCount, hidden, onEdit, onSettings }: Props) {
   return (
     <div className={`bar top${hidden ? ' hidden' : ''}`}>
+      {cameraNote && <span style={{ color: 'var(--warn)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '55vw' }}>{cameraNote}</span>}
       <span className="spacer" />
       <span className="muted" style={{ fontVariantNumeric: 'tabular-nums' }}>
         {ctl.cursor + 1}/{wordCount}
