@@ -17,6 +17,8 @@ export function tidyScript(text: string): string {
       if (inFence) return ''
       if (/^\|/.test(l)) return '' // markdown table rows
       if (/^!\[/.test(l)) return '' // images
+      l = l.replace(/<[^>]+>/g, '').trim() // html tags (logo header, <br>, etc.)
+      if (!l) return ''
       if (/^(#{1,6}\s|---+$|\*\*\*+$|___+$)/.test(l)) return ''
       if (/^\*?\[.*\]\*?$/.test(l)) return '' // *[stage direction]*
       if (/^\*\*?[A-Z][A-Z .'’-]{2,}:?\*\*?$/.test(l) || /^[A-Z][A-Z .'’-]{2,}:$/.test(l)) return '' // SPEAKER:

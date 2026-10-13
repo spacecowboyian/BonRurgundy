@@ -17,6 +17,9 @@ describe('tidyScript', () => {
 > quoted line`
     expect(tidyScript(input)).toBe('Ladies and gentlemen, welcome.\n\nquoted line')
   })
+  it('strips html tags and drops lines that were only tags', () => {
+    expect(tidyScript('<p align="center"><img src="x.png"></p>\n\n# T\n\nHello <b>there</b>')).toBe('Hello there')
+  })
   it('drops code fences, tables, images, links and bare urls', () => {
     const input = `Intro line with a [link](https://x.y) and \`code\`.
 
