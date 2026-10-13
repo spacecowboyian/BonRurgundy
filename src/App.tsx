@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCamera } from './hooks/useCamera'
 import { usePrompterControl } from './hooks/usePrompterControl'
 import { useSpeech } from './hooks/useSpeech'
+import { useAligner } from './hooks/useAligner'
 import { useLocalState } from './lib/storage'
 import { parseScript } from './lib/script'
 import { SAMPLE_SCRIPT } from './data/sampleScript'
@@ -22,6 +23,7 @@ export default function App() {
 
   const script = useMemo(() => parseScript(scriptText), [scriptText])
   const ctl = usePrompterControl(script.words.length)
+  const aligner = useAligner(script, speech, ctl)
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) document.exitFullscreen()
@@ -146,7 +148,7 @@ export default function App() {
   return (
     <>
       <VideoLayer stream={cam.stream} mirror={prefs.mirror} />
-      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} />
+      <Prompter script={script} cursor={ctl.cursor} prefs={prefs} status={speech.status === 'listening' && aligner.enabled ? aligner.state.status : null} />
       <CameraHud
         cam={cam}
         prefs={prefs}
@@ -157,7 +159,7 @@ export default function App() {
         onFullscreen={toggleFullscreen}
         hidden={hudHidden}
       />
-      <SpeechPanel speech={speech} hidden={hudHidden || speechHidden} />
+      <SpeechPanel speech={speech} aligner={aligner} hidden={hudHidden || speechHidden} />
       {editing && <ScriptEditor text={scriptText} onChange={setScriptText} onClose={() => setEditing(false)} />}
     </>
   )

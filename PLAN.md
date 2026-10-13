@@ -21,12 +21,12 @@ Goal: a Chrome tab on the Mac showing the Pocket 3 feed full-screen with a scrip
 - **Test:** usable as a dumb teleprompter over the live feed.
 - **Result:** built. Seeded with the Reverend's lines from the CoC "Resurrection Protocol" script. Speed mode is wpm-driven; aligner will replace it in Phase 4.
 
-## Phase 3: Speech-to-text
+## Phase 3: Speech-to-text (DONE 2026-10-13: Web Speech API, 95-96% confidence on Pocket 3 mic)
 - `useSpeech` hook on Web Speech API (`webkitSpeechRecognition`, `continuous`, `interimResults`). Select Pocket 3 mic as input.
 - Debug panel: live interim and final transcript, latency.
 - **Test:** read a 2-minute script, check word accuracy and lag. Decision gate: stay on Web Speech or move to Deepgram/Whisper.
 
-## Phase 4: Aligner (pure TS, unit tested)
+## Phase 4: Aligner (pure TS, unit tested) (DONE 2026-10-13)
 - Tokenize + normalize script (lowercase, strip punctuation, numbers to words).
 - Input: last 3 to 5 recognized words. Search window: cursor to cursor+40. Per-token edit-distance tolerance.
 - Output: new cursor + state (`tracking | riffing | held`). Never jump backward unless strong match behind.

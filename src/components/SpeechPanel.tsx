@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react'
 import type { UseSpeechResult } from '../hooks/useSpeech'
+import type { AlignerView } from '../hooks/useAligner'
 
 interface Props {
   speech: UseSpeechResult
+  aligner: AlignerView
   hidden: boolean
 }
 
-export function SpeechPanel({ speech, hidden }: Props) {
+export function SpeechPanel({ speech, aligner, hidden }: Props) {
   const { status, error, finals, interim, log, lastGapMs, start, stop, clear, mics, micId, setMicId } = speech
   const logRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -48,6 +50,26 @@ export function SpeechPanel({ speech, hidden }: Props) {
           {listening ? 'Stop (V)' : 'Listen (V)'}
         </button>
         <button onClick={clear}>Clear</button>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input type="checkbox" checked={aligner.enabled} onChange={(e) => aligner.setEnabled(e.target.checked)} />
+          voice follow
+        </label>
+        <span
+          style={{
+            padding: '2px 8px',
+            borderRadius: 999,
+            fontWeight: 600,
+            background: aligner.state.status === 'riffing' ? 'rgba(248,113,113,0.25)' : 'rgba(74,222,128,0.2)',
+            color: aligner.state.status === 'riffing' ? 'var(--warn)' : 'var(--ok)',
+          }}
+        >
+          {aligner.state.status}
+        </span>
+        <span style={{ color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+          tok {aligner.state.cursor} · miss {aligner.state.unmatched}
+        </span>
       </div>
       <select value={micId ?? ''} onChange={(e) => setMicId(e.target.value)} disabled={listening}>
         {mics.length === 0 && <option value="">No mics</option>}

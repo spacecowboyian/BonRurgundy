@@ -19,13 +19,15 @@ interface Props {
   prefs: PrompterPrefs
   /** Called with the number of words visible per viewport, for speed-mode scrolling. */
   onLayout?: (wordsPerViewport: number) => void
+  /** Alignment status while listening; tints the reading line. */
+  status?: 'tracking' | 'riffing' | null
 }
 
 /**
  * Text layer. Positions the cursor word on the reading line by translating the
  * whole script block. Smooth via CSS transition; the aligner just moves `cursor`.
  */
-export function Prompter({ script, cursor, prefs, onLayout }: Props) {
+export function Prompter({ script, cursor, prefs, onLayout, status }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([])
   const translateRef = useRef(0)
@@ -78,7 +80,8 @@ export function Prompter({ script, cursor, prefs, onLayout }: Props) {
           right: 0,
           top: `${prefs.lineAt * 100}%`,
           height: 0,
-          borderTop: '2px solid rgba(255,204,51,0.55)',
+          borderTop: `2px solid ${status === 'riffing' ? 'rgba(248,113,113,0.8)' : status === 'tracking' ? 'rgba(74,222,128,0.7)' : 'rgba(255,204,51,0.55)'}`,
+          transition: 'border-color 200ms',
           transform: 'translateY(-1px)',
         }}
       />
