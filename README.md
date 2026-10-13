@@ -1,3 +1,5 @@
+<p align="center"><img src="public/icon-512.png" width="160" alt="BonRurgundy"></p>
+
 # BonRurgundy
 
 *A teleprompter that actually listens to you.*
