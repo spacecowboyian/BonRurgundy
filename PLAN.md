@@ -7,11 +7,12 @@ Goal: a Chrome tab on the Mac showing the Pocket 3 feed full-screen with a scrip
 - Plug in via data USB-C, choose **Webcam**. Confirm it appears in `chrome://settings/content/camera` and as an audio input.
 - Do not run OBS/Photo Booth at the same time (mode lock).
 
-## Phase 1: Scaffold + camera feed
+## Phase 1: Scaffold + camera feed (DONE)
 - `npm create vite@latest` with React + TS. Add Vitest.
 - `useCamera` hook: `enumerateDevices`, device picker, `getUserMedia` with `{ width: { ideal: 3840 }, height: { ideal: 2160 } }`.
 - Full-screen `<video>` with a badge showing `track.getSettings()` (actual width/height/fps).
 - **Test:** 4K badge appears for Pocket 3? Press record on the camera, exit webcam mode, check card clip resolution. Log result in `hardware-findings` (this answers the open 4K question).
+- **Result 2026-10-13:** done. Requesting 3840x2160 puts the camera in 4K30; requesting exact 24 fps puts it in 4K24 (confirmed on the camera screen). Host UVC request drives camera mode. Card clip resolution at 4K24 still to be eyeballed.
 
 ## Phase 2: Script + manual prompter
 - Script editor route: textarea, saved to localStorage.
