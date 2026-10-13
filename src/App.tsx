@@ -271,6 +271,22 @@ export default function App() {
   }, [editing, settingsOpen, ctl, prefs])
 
   const voiceStatus = speech.status === 'listening' && aligner.enabled ? (aligner.held ? 'held' : aligner.state.status) : null
+
+  // Brief confirmation when a voice command fires, so the reader knows it was heard.
+  const [toast, setToast] = useState<string | null>(null)
+  useEffect(() => {
+    const c = aligner.lastCommand?.cmd
+    if (!c) return
+    const label =
+      c.kind === 'back' || c.kind === 'forward'
+        ? `${c.kind} ${c.lines} line${c.lines === 1 ? '' : 's'}`
+        : c.kind === 'prevPara' || c.kind === 'nextPara'
+          ? `${c.kind === 'prevPara' ? 'previous' : 'next'}${c.count > 1 ? ` ${c.count}` : ''} paragraph${c.count === 1 ? '' : 's'}`
+          : c.kind
+    setToast(label)
+    const t = window.setTimeout(() => setToast(null), 1200)
+    return () => window.clearTimeout(t)
+  }, [aligner.lastCommand])
   const [lineCount, setLineCount] = useState(1)
   const setLines = ctl.setLines
   const onLines = useCallback(
@@ -300,6 +316,7 @@ export default function App() {
       />
       {!editing && <ScrollBar cursor={ctl.cursor} wordCount={script.words.length} visibleFraction={visibleFraction} onSeek={ctl.setCursor} />}
       {!editing && <RightDock />}
+      {toast && <div className="toast">{toast}</div>}
       {!editing && <Transport ctl={ctl} playing={ctl.playing} onTogglePlay={togglePlay} />}
       {!editing && (
         <MicButton listening={listening} disabled={speech.status === 'unsupported'} onClick={toggleMic} />

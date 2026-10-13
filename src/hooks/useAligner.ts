@@ -41,6 +41,11 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
   const [held, setHeld] = useState(false)
   const [wakeTextRaw, setWakeText] = useLocalState<string>('osmo-prompter.wake', DEFAULT_WAKE.join(', '))
   const wakeText = wakeTextRaw ?? ''
+  // Older builds saved 'prompter', 'bob', 'cue, q, queue' or just 'bon'; move those to the current default.
+  useEffect(() => {
+    const w = parseWakeList(wakeText).join(',')
+    if (['', 'prompter', 'bob', 'cue,q,queue', 'bon', 'bon,bonn'].includes(w)) setWakeText(DEFAULT_WAKE.join(', '))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const wake = useMemo(() => {
     const w = parseWakeList(wakeText)
     return w.length ? w : DEFAULT_WAKE
@@ -49,6 +54,10 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
   // Fingerprint of the command fired from the current interim, so the final
   // for the same utterance doesn't fire it again.
   const firedInterim = useRef<string | null>(null)
+  // Interim hypotheses grow word by word ("bon back" then "bon back two"), so
+  // wait for the phrase to settle before firing, else "back two" fires twice.
+  const pendingTimer = useRef<number | null>(null)
+  const pendingFp = useRef<string | null>(null)
 
   const runCommand = (cmd: Command) => {
     setLastCommand({ cmd, at: performance.now() })
@@ -120,8 +129,13 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
         const parsed = parseCommands(normalize(c.text), wake)
         if (parsed.commands.length) {
           const fp = JSON.stringify(parsed.commands)
+          if (pendingTimer.current) {
+            window.clearTimeout(pendingTimer.current)
+            pendingTimer.current = null
+          }
           if (firedInterim.current !== fp) parsed.commands.forEach(runCommand)
           firedInterim.current = null
+          pendingFp.current = null
           // The command moved the cursor; the manual-move effect will reset the
           // checkpoint. Align only what was said after the command.
           checkpoint.current = { ...INITIAL_STATE, cursor: wordToCursor(tokens, ctl.cursor) }
@@ -132,17 +146,24 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
       }
     }
 
-    // Interim: fire a command as soon as it is recognizable, once per utterance.
+    // Interim: fire a command once the phrase has settled, once per utterance.
     const parsed = parseCommands(interimTokens, wake)
     if (parsed.commands.length) {
       const fp = JSON.stringify(parsed.commands)
-      if (firedInterim.current !== fp) {
-        firedInterim.current = fp
-        runCommand(parsed.commands[parsed.commands.length - 1])
-        return // cursor change re-runs this effect with a fresh checkpoint
+      if (firedInterim.current !== fp && pendingFp.current !== fp) {
+        pendingFp.current = fp
+        if (pendingTimer.current) window.clearTimeout(pendingTimer.current)
+        pendingTimer.current = window.setTimeout(() => {
+          pendingTimer.current = null
+          if (firedInterim.current === fp) return
+          firedInterim.current = fp
+          runCommand(parsed.commands[parsed.commands.length - 1])
+        }, 350)
       }
+      return
     } else if (interimTokens.length === 0) {
       firedInterim.current = null
+      pendingFp.current = null
     }
     if (held) {
       setView({ ...checkpoint.current, status: 'tracking' })

@@ -10,7 +10,7 @@
  * inconsistently; "bon" (as in BonRurgundy) is one syllable and rare in scripts; "bonn" covers a common mis-hearing.
  */
 
-export const DEFAULT_WAKE = ['bon', 'bonn']
+export const DEFAULT_WAKE = ['bon', 'bonn', 'bone', 'bond', 'von', 'bun']
 export const WAKE = DEFAULT_WAKE[0]
 
 /** Parse a user-entered wake list: "cue, q, queue" -> normalized tokens. */
