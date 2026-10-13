@@ -139,10 +139,10 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
           // The command moved the cursor; the manual-move effect will reset the
           // checkpoint. Align only what was said after the command.
           checkpoint.current = { ...INITIAL_STATE, cursor: wordToCursor(tokens, ctl.cursor) }
-          if (parsed.rest.length && !held) checkpoint.current = align(checkpoint.current, tokens, parsed.rest)
+          if (parsed.rest.length && !held) checkpoint.current = align(checkpoint.current, tokens, parsed.rest, c.at)
           continue
         }
-        if (!held) checkpoint.current = align(checkpoint.current, tokens, parsed.rest)
+        if (!held) checkpoint.current = align(checkpoint.current, tokens, parsed.rest, c.at)
       }
     }
 
@@ -171,7 +171,7 @@ export function useAligner(script: ParsedScript, speech: UseSpeechResult, ctl: P
     }
     // Don't align the wake word itself while the verb is still coming.
     const toAlign = pendingCommand(parsed.rest, wake) ? parsed.rest.slice(0, lastWakeIndex(parsed.rest, wake)) : parsed.rest
-    const live = toAlign.length ? align(checkpoint.current, tokens, toAlign) : checkpoint.current
+    const live = toAlign.length ? align(checkpoint.current, tokens, toAlign, performance.now()) : checkpoint.current
     setView(live)
     const word = cursorWord(tokens, live.cursor)
     if (word !== ctl.cursor) {

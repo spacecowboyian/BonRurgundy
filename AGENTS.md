@@ -53,7 +53,8 @@ Chrome is the reference browser. Speech recognition is the Web Speech API, which
 - Any scroll smoothing must not fight manual drag or swipe. A velocity model was tried and reverted for that reason.
 - Keep the chrome minimal: words, a transparent top bar, the bottom docks and the mic. Opening settings or the editor pauses the mic.
 - The next word to read is highlighted yellow; read words dim.
-- Voice commands fire from the recognizer's interim hypothesis and are stripped before alignment. Stop words never start an alignment jump.
+- The aligner is flow-first: a recognized word only advances the cursor if it matches one of the next 3 expected tokens; filler and stop words only confirm the very next one. A jump anywhere else requires about 2 s of sustained mismatch plus a 3-word phrase match. Never loosen this to "match anywhere"; ad-libs like "you know" used to teleport the prompter.
+- Voice commands fire from the recognizer's interim hypothesis and are stripped before alignment.
 - iOS allows one capture stream: do not open a second getUserMedia for the mic there (`useSpeech` handles it).
 - The README is written to be read aloud and must not use real names from the film it nods to.
 - Wake word default is `bon`. Donation handles live in `src/config.ts` and are intentionally public.

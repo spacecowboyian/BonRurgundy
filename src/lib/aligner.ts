@@ -8,24 +8,30 @@ export interface ScriptToken {
 }
 
 export interface AlignerConfig {
-  /** How far ahead of the cursor to search, in tokens. */
-  window: number
-  /** How far behind to search for a re-read, in tokens. */
+  /** Tokens ahead of the cursor a single word may match: the "expected next" zone. */
+  near: number
+  /** Tokens ahead to search when re-syncing with a phrase. */
+  farWindow: number
+  /** Tokens behind to search when re-syncing with a phrase (re-reads). */
   lookbehind: number
   /** Minimum similarity for a fuzzy token match. */
   minSim: number
   /** Consecutive unmatched tokens before we decide the speaker is riffing. */
   riffAfter: number
-  /** Penalty per token of forward distance, so near matches beat far ones. */
-  distancePenalty: number
+  /** Unmatched for at least this long before a phrase re-sync is allowed. */
+  resyncAfterMs: number
+  /** Consecutive recognized tokens that must match in a row to re-sync. */
+  phrase: number
 }
 
 export const DEFAULT_CONFIG: AlignerConfig = {
-  window: 40,
-  lookbehind: 15,
+  near: 3,
+  farWindow: 120,
+  lookbehind: 40,
   minSim: 0.75,
   riffAfter: 6,
-  distancePenalty: 0.015,
+  resyncAfterMs: 2000,
+  phrase: 3,
 }
 
 export type AlignStatus = 'tracking' | 'riffing'
@@ -36,15 +42,16 @@ export interface AlignState {
   /** Consecutive recognized tokens that found no match. */
   unmatched: number
   status: AlignStatus
-  /** Last recognized token, used for bigram re-read detection. */
-  prevTok: string | null
+  /** Recent recognized tokens that didn't match, oldest first (for phrase re-sync). */
+  recent: string[]
+  /** Timestamp (ms) of the last confirmed match; null until the first. */
+  lastMatchAt: number | null
 }
 
-export const INITIAL_STATE: AlignState = { cursor: 0, unmatched: 0, status: 'tracking', prevTok: null }
+export const INITIAL_STATE: AlignState = { cursor: 0, unmatched: 0, status: 'tracking', recent: [], lastMatchAt: null }
 
-/** Very common words only match close to the cursor to avoid false jumps. */
-const STOP = new Set(['the', 'a', 'an', 'and', 'of', 'to', 'in', 'is', 'it', 'that', 'this', 'was', 'for', 'on', 'at', 'we', 'i', 'he', 'so', 'but', 'or', 'as', 'be', 'by'])
-const STOP_REACH = 4
+/** Very common words only ever confirm the immediate next token. */
+const STOP = new Set(['the', 'a', 'an', 'and', 'of', 'to', 'in', 'is', 'it', 'that', 'this', 'was', 'for', 'on', 'at', 'we', 'i', 'he', 'so', 'but', 'or', 'as', 'be', 'by', 'you', 'know', 'well', 'hey', 'um', 'uh', 'like', 'just', 'yeah', 'okay', 'ok', 'right'])
 
 export function tokenizeScript(script: ParsedScript): ScriptToken[] {
   const out: ScriptToken[] = []
@@ -58,17 +65,25 @@ function matches(a: string, b: string, minSim: number): boolean {
   return similarity(a, b) >= minSim
 }
 
-/** Find the best match for `tok` in [from, to). Returns token index or -1. */
-function findForward(tokens: ScriptToken[], tok: string, from: number, to: number, cfg: AlignerConfig): number {
-  const reach = STOP.has(tok) ? Math.min(to, from + STOP_REACH) : to
+/** Does `phrase` (recognized tokens) match script tokens starting at `at`? */
+function phraseAt(tokens: ScriptToken[], phrase: string[], at: number, minSim: number): boolean {
+  if (at < 0 || at + phrase.length > tokens.length) return false
+  for (let k = 0; k < phrase.length; k++) if (!matches(phrase[k], tokens[at + k].norm, minSim)) return false
+  return true
+}
+
+/** Find `phrase` nearest to `from`, searching forward then back. Returns start index or -1. */
+function findPhrase(tokens: ScriptToken[], phrase: string[], from: number, cfg: AlignerConfig): number {
+  const lo = Math.max(0, from - cfg.lookbehind)
+  const hi = Math.min(tokens.length, from + cfg.farWindow)
   let best = -1
-  let bestScore = -Infinity
-  for (let i = from; i < reach && i < tokens.length; i++) {
-    const t = tokens[i].norm
-    if (!matches(tok, t, cfg.minSim)) continue
-    const score = (t === tok ? 1 : similarity(tok, t)) - (i - from) * cfg.distancePenalty
-    if (score > bestScore) {
-      bestScore = score
+  let bestDist = Infinity
+  for (let i = lo; i < hi; i++) {
+    if (!phraseAt(tokens, phrase, i, cfg.minSim)) continue
+    // Prefer forward matches slightly: reading ahead is more likely than re-reading.
+    const dist = i >= from ? i - from : (from - i) * 1.5
+    if (dist < bestDist) {
+      bestDist = dist
       best = i
     }
   }
@@ -77,41 +92,58 @@ function findForward(tokens: ScriptToken[], tok: string, from: number, to: numbe
 
 /**
  * Advance the alignment state by one recognized token. Pure.
- * - Forward fuzzy match in the window: cursor jumps past it.
- * - Otherwise a bigram (prev + this) match behind the cursor: re-read, jump back.
- * - Otherwise unmatched++; after `riffAfter` we flag riffing (cursor frozen).
+ *
+ * Flow-first policy:
+ * - A token advances the cursor only if it matches one of the next `near`
+ *   expected tokens (this absorbs a dropped word or a mis-heard one).
+ * - Anything else is treated as an ad-lib: it never causes a jump by itself.
+ * - If the reader has been unmatched for `resyncAfterMs` and the last `phrase`
+ *   recognized tokens appear consecutively somewhere nearby, jump there.
+ *   That's the only way to move more than `near` tokens at once.
+ * - `riffAfter` consecutive misses flags riffing (cursor frozen) until a
+ *   match or a re-sync.
  */
-export function step(state: AlignState, tokens: ScriptToken[], tok: string, cfg: AlignerConfig = DEFAULT_CONFIG): AlignState {
+export function step(state: AlignState, tokens: ScriptToken[], tok: string, now: number, cfg: AlignerConfig = DEFAULT_CONFIG): AlignState {
   if (tokens.length === 0) return state
   const from = state.cursor
-  // Stop words only confirm a run already in progress; they never start one.
-  const fwd = STOP.has(tok) && state.unmatched > 0 ? -1 : findForward(tokens, tok, from, from + cfg.window, cfg)
-  if (fwd >= 0) {
-    return { cursor: fwd + 1, unmatched: 0, status: 'tracking', prevTok: tok }
+
+  // 1. Expected-next zone. Stop/filler words only confirm the very next token.
+  const reach = STOP.has(tok) ? 1 : cfg.near
+  for (let i = from; i < Math.min(tokens.length, from + reach); i++) {
+    if (matches(tok, tokens[i].norm, cfg.minSim)) {
+      return { cursor: i + 1, unmatched: 0, status: 'tracking', recent: [], lastMatchAt: now }
+    }
   }
-  // Re-read detection: previous and current recognized tokens matching two
-  // consecutive script tokens somewhere behind the cursor.
-  if (state.prevTok && !STOP.has(tok)) {
-    const lo = Math.max(0, from - cfg.lookbehind)
-    for (let i = lo; i < from - 1; i++) {
-      if (matches(state.prevTok, tokens[i].norm, cfg.minSim) && matches(tok, tokens[i + 1].norm, cfg.minSim)) {
-        return { cursor: i + 2, unmatched: 0, status: 'tracking', prevTok: tok }
+
+  // 2. Not expected: remember it, count the miss.
+  const recent = [...state.recent, tok].slice(-Math.max(cfg.phrase, 6))
+  const unmatched = state.unmatched + 1
+  const since = state.lastMatchAt == null ? Infinity : now - state.lastMatchAt
+
+  // 3. Phrase re-sync, only after a sustained mismatch and only on a real phrase.
+  if (since >= cfg.resyncAfterMs && recent.length >= cfg.phrase) {
+    const phrase = recent.slice(-cfg.phrase)
+    if (!phrase.every((p) => STOP.has(p))) {
+      const at = findPhrase(tokens, phrase, from, cfg)
+      if (at >= 0) {
+        return { cursor: at + phrase.length, unmatched: 0, status: 'tracking', recent: [], lastMatchAt: now }
       }
     }
   }
-  const unmatched = state.unmatched + 1
+
   return {
     cursor: state.cursor,
     unmatched,
     status: unmatched >= cfg.riffAfter ? 'riffing' : state.status,
-    prevTok: tok,
+    recent,
+    lastMatchAt: state.lastMatchAt,
   }
 }
 
-/** Fold a list of recognized tokens through `step`. */
-export function align(state: AlignState, tokens: ScriptToken[], recognized: string[], cfg: AlignerConfig = DEFAULT_CONFIG): AlignState {
+/** Fold a list of recognized tokens through `step`, all stamped with `now`. */
+export function align(state: AlignState, tokens: ScriptToken[], recognized: string[], now: number, cfg: AlignerConfig = DEFAULT_CONFIG): AlignState {
   let s = state
-  for (const tok of recognized) s = step(s, tokens, tok, cfg)
+  for (const tok of recognized) s = step(s, tokens, tok, now, cfg)
   return s
 }
 

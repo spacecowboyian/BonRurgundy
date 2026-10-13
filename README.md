@@ -68,7 +68,7 @@ Voice holds the microphone choice, the wake word, and the follow-my-voice toggle
 
 ## How it works, for the curious
 
-The browser's Web Speech API turns your voice into words. A small aligner matches those words against the script with some tolerance. It expands numbers so "fifty four" and the digits agree, it splits things like "AW11" into "aw eleven", and it forgives a missed consonant. Short filler words can confirm that you are on track but never start a jump on their own, which is what stopped it from leaping ahead every time you said "the". Six unmatched words in a row and it decides you are riffing and freezes. The next phrase that matches the script brings it back.
+The browser's Web Speech API turns your voice into words. A small aligner matches those words against the script with some tolerance. It expands numbers so "fifty four" and the digits agree, it splits things like "AW11" into "aw eleven", and it forgives a missed consonant. It assumes you are reading forward. A word only moves the prompter if it is one of the next few words expected, so a stray "well" or "you know" does nothing even if those words appear later in your script. If you go off script for a few seconds and then say three words in a row that match somewhere nearby, it jumps there to catch up. Six unmatched words in a row and it decides you are riffing and freezes until the script comes back.
 
 It's science.
 
