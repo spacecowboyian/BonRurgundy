@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCamera } from './hooks/useCamera'
 import { usePrompterControl } from './hooks/usePrompterControl'
 import { useSpeech } from './hooks/useSpeech'
@@ -97,6 +97,51 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [editing, ctl, setPrefs, speech])
+
+  // Wheel / trackpad / touch scrolling on the text. Pixels are converted to
+  // words using the current font size so the feel stays constant across sizes.
+  const scrollAcc = useRef(0)
+  const touchY = useRef<number | null>(null)
+  useEffect(() => {
+    const pxPerWord = () => (prefs.fontSize * 1.35) / 7 // ~7 words per line
+    const applyDelta = (dy: number) => {
+      scrollAcc.current += dy
+      const words = Math.trunc(scrollAcc.current / pxPerWord())
+      if (words !== 0) {
+        scrollAcc.current -= words * pxPerWord()
+        ctl.nudge(words)
+      }
+    }
+    const onWheel = (e: WheelEvent) => {
+      if (editing) return
+      if ((e.target as HTMLElement).closest?.('input,select,button')) return
+      e.preventDefault()
+      applyDelta(e.deltaY)
+    }
+    const onTouchStart = (e: TouchEvent) => {
+      if (editing) return
+      touchY.current = e.touches[0].clientY
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (editing || touchY.current == null) return
+      const y = e.touches[0].clientY
+      applyDelta(touchY.current - y) // swipe up = advance
+      touchY.current = y
+    }
+    const onTouchEnd = () => {
+      touchY.current = null
+    }
+    window.addEventListener('wheel', onWheel, { passive: false })
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: true })
+    window.addEventListener('touchend', onTouchEnd)
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [editing, ctl, prefs.fontSize])
 
   return (
     <>
