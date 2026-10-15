@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useCamera } from './hooks/useCamera'
 import { usePrompterControl } from './hooks/usePrompterControl'
+import { useScriptTouch } from './hooks/useScriptTouch'
 import { useSpeech } from './hooks/useSpeech'
 import { useAligner } from './hooks/useAligner'
 import { useRelay } from './hooks/useRelay'
@@ -38,9 +39,9 @@ export default function App() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [prefs, setPrefsRaw] = useLocalState<PrompterPrefs>('osmo-prompter.prefs2', DEFAULT_PREFS)
-  // Older builds stored font size in px; anything over 20 can't be a vh value.
+  // Older builds stored font size in px, beyond the current 3–30 vmin range.
   useEffect(() => {
-    if (prefs.fontSize > 20) setPrefsRaw((p) => ({ ...p, fontSize: DEFAULT_PREFS.fontSize }))
+    if (prefs.fontSize > 30) setPrefsRaw((p) => ({ ...p, fontSize: DEFAULT_PREFS.fontSize }))
   }, [prefs.fontSize, setPrefsRaw])
   const setPrefs = setPrefsRaw
   const [editing, setEditing] = useState(() => !scriptText.trim())
@@ -228,49 +229,33 @@ export default function App() {
   // Wheel / trackpad / touch scrolling on the text. Pixels are converted to
   // words using the current font size so the feel stays constant across sizes.
   const scrollAcc = useRef(0)
-  const touchY = useRef<number | null>(null)
-  useEffect(() => {
-    const blocked = () => editing || settingsOpen
+  const applyScrollDelta = useCallback((dy: number) => {
     const pxPerWord = () => (fontPx(prefs) * 1.2) / 5 // ~7 words per line
-    const applyDelta = (dy: number) => {
-      scrollAcc.current += dy
-      const words = Math.trunc(scrollAcc.current / pxPerWord())
-      if (words !== 0) {
-        scrollAcc.current -= words * pxPerWord()
-        ctl.nudge(words)
-      }
+    scrollAcc.current += dy
+    const words = Math.trunc(scrollAcc.current / pxPerWord())
+    if (words !== 0) {
+      scrollAcc.current -= words * pxPerWord()
+      ctl.nudge(words)
     }
+  }, [prefs, ctl])
+  useScriptTouch({
+    blocked: editing || settingsOpen,
+    fontSize: prefs.fontSize,
+    onFontSize: (fontSize) => setPrefs((p) => ({ ...p, fontSize })),
+    onScroll: applyScrollDelta,
+  })
+  useEffect(() => {
     const onWheel = (e: WheelEvent) => {
-      if (blocked()) return
+      if (editing || settingsOpen) return
       if ((e.target as HTMLElement).closest?.('input,select,button,.bar,.sheet')) return
       e.preventDefault()
-      applyDelta(e.deltaY)
-    }
-    const onTouchStart = (e: TouchEvent) => {
-      if (blocked()) return
-      if ((e.target as HTMLElement).closest?.('.bar,.sheet,.scrollbar,.dock,.center-dock,.mic,.donate-sheet')) return
-      touchY.current = e.touches[0].clientY
-    }
-    const onTouchMove = (e: TouchEvent) => {
-      if (blocked() || touchY.current == null) return
-      const y = e.touches[0].clientY
-      applyDelta(touchY.current - y) // swipe up = advance
-      touchY.current = y
-    }
-    const onTouchEnd = () => {
-      touchY.current = null
+      applyScrollDelta(e.deltaY)
     }
     window.addEventListener('wheel', onWheel, { passive: false })
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchmove', onTouchMove, { passive: true })
-    window.addEventListener('touchend', onTouchEnd)
     return () => {
       window.removeEventListener('wheel', onWheel)
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchmove', onTouchMove)
-      window.removeEventListener('touchend', onTouchEnd)
     }
-  }, [editing, settingsOpen, ctl, prefs])
+  }, [editing, settingsOpen, applyScrollDelta])
 
   const voiceStatus = speech.status === 'listening' && aligner.enabled ? (aligner.held ? 'held' : aligner.state.status) : null
 

@@ -30,6 +30,8 @@ The top bar holds the word count, the script button and the settings gear. Openi
 
 Swipe or scroll the text any time to move it by hand. There is a thin progress bar on the right edge that shows how far along you are, and you can drag it like a scrollbar to jump anywhere. The prompter picks you back up from wherever you land.
 
+On a phone, spread two fingers over the script to make the words bigger, or pinch them together to make them smaller. Only the script changes size, not the controls. Your text size is saved on that device.
+
 Nothing leaves your device except audio to your browser's own speech recognizer. The script and your settings live in local storage on that phone or computer.
 
 ## The transport bar
